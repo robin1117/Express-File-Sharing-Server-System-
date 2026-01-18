@@ -12,6 +12,7 @@ app.use((req, res, next) => {
 })
 
 app.use('/directory', directoryRoutes)
+
 app.use('/file', fileRoutes)
 
 let ser = app.listen(5000, '0.0.0.0', () => {

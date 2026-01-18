@@ -1,32 +1,51 @@
 import express from 'express'
-import { createWriteStream } from 'fs'
-import { rename, rm } from 'fs/promises'
+import { createWriteStream, WriteStream } from 'fs'
+import { rename, rm, writeFile } from 'fs/promises'
 import path from 'path'
+import fileDB from "../fileDB.json" with {type: "json"}
+import directoryDB from "../directoryDB.json" with {type: "json"}
+
 
 let route = express.Router()
 
-function locateToStorage(req) {
-    const filePath = (req.params.fileName || []).join('/')
-    return path.join(import.meta.dirname, '/../storage', filePath)
-}
-
 //Read
-route.get('/*fileName', (req, res, next) => {
+route.get('/:id', (req, res, next) => {
     try {
-        if (req.query.action == 'download') res.set('Content-Disposition', 'attachment')
-        res.sendFile(locateToStorage(req))
+        let id = req.params.id
+        let fileData = fileDB.find((fileData) => fileData.id == id)
+        let fullName = `${id}${fileData.extension}`
+        let fileObj = fileDB.find((fileObj) => fileObj.id == id)
+        let fileName = fileObj.fileName
+        if (req.query.action == 'download') res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+        res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
+            if (err && !res.headersSent) {
+                res.status(404).send("File not found");
+            }
+        })
     } catch (error) {
         res.json(error.message)
     }
 })
 
-//uploading 
-route.post('/*fileName', (req, res) => {
+//uploading
+route.post('/:fileName', (req, res) => {
     try {
-        let writeStream = createWriteStream(locateToStorage(req))
+        let fileName = req.params.fileName
+        let parentId = req.headers.dirid == "undefined" ? directoryDB[0].id : req.headers.dirid
+        let id = crypto.randomUUID()
+        let extension = path.extname(fileName)
+        let fullPath = path.join(import.meta.dirname, '/../storage', id + extension)
+        let writeStream = createWriteStream(fullPath)
         req.pipe(writeStream)
         req.on('end', () => {
+            fileDB.push({ id, fileName, extension, parentId })
+            writeFile('./fileDB.json', JSON.stringify(fileDB))
             res.json({ message: 'File has been sended' })
+
+            let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
+            refrenceDir.files.push(id)
+
+            writeFile('./directoryDB.json', JSON.stringify(directoryDB))
         })
     } catch (error) {
         res.json(error.message)
@@ -34,24 +53,37 @@ route.post('/*fileName', (req, res) => {
 })
 
 //Delete file / folder
-route.delete("/*fileName", async (req, res) => {
+route.delete("/:id", async (req, res) => {
     try {
-        await rm(locateToStorage(req), { recursive: true })
+        let fileid = req.params.id
+        let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileid)
+        let fileData = fileDB[fileDataIndex]
+        let fullName = `${fileid}${fileDB[fileDataIndex].extension}`
+        await rm(path.join(import.meta.dirname, '/../storage', fullName))
+        fileDB.splice(fileDataIndex, 1)
+        let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
+        selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileid)
+
+        writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+        writeFile('./fileDB.json', JSON.stringify(fileDB))
+
         res.json(`We deleted ${req.params.fileName} Successfully !`)
+
     } catch (error) {
         res.json(error.message)
     }
 })
 
 //Update
-route.patch('/*fileName', async (req, res) => {
+route.patch('/:id', async (req, res) => {
     try {
-        await rename(locateToStorage(req), `./storage/${req.body.newFileName}`)
+        let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
+        fileDataReference.fileName = req.body.fileName
+        writeFile('./fileDB.json', JSON.stringify(fileDB))
         res.json(`File Has been Renamed`)
     } catch (error) {
-        res.json('sELETC ONE FILE ATLEAT')
+        res.json('SELETC ONE FILE ATLEAT')
     }
 })
-
 
 export default route
