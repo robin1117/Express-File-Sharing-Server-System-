@@ -5,78 +5,69 @@ import directoryDB from "../directoryDB.json" with {type: "json"}
 import fileDB from "../fileDB.json" with {type: "json"}
 
 let router = express.Router()
-function locateToStorage(req) {
-    const filePath = (req.params.directURL || []).join('/')
-    return path.join(import.meta.dirname, '/../storage', filePath)
-}
 
 //serving Directory
-router.get(['/', '/*id'], async (req, res) => {
-    try {
-        let id = req.params.id
-        if (!id) {
-            let files = directoryDB[0].files.map((fileId) => fileDB.find((fileObj) => fileObj.id == fileId))
-            let directories = directoryDB[0].directories.map((dirId) => directoryDB.find((dirObj) => dirObj.id == dirId))
-            return res.json({ ...directoryDB[0], directories, files })
-        }
-        else {
-            let indexDirectory = directoryDB.findIndex((directory) => directory.id == id)
-            let files = directoryDB[indexDirectory].files.map((fileId) => fileDB.find((fileObj) => fileObj.id == fileId))
-            let directories = directoryDB[indexDirectory].directories.map((dirId) => directoryDB.find((dirObj) => dirObj.id == dirId))
-            return res.json({ ...directoryDB[indexDirectory], directories, files })
-        }
-    } catch (error) {
-        res.json(error.message)
+router.get(['/', '/:id'], async (req, res) => {
+
+    let id = req.params.id || directoryDB[0].id
+
+    let indexDirectory = directoryDB.findIndex((directory) => directory.id == id)
+    if (indexDirectory == -1) {
+        return res.status(404).json({ message: "Directoy not found" })
     }
+    let files = directoryDB[indexDirectory].files.map((fileId) => fileDB.find((fileObj) => fileObj.id == fileId))
+    let directories = directoryDB[indexDirectory].directories.map((dirId) => directoryDB.find((dirObj) => dirObj.id == dirId))
+    return res.status(200).json({ ...directoryDB[indexDirectory], directories, files })
+
 })
 
 //creating folder
-router.post(['/', '/:dirName'], async (req, res) => {
+router.post(['/', '/:dirName'], async (req, res, next) => {
     try {
         let dirName = req.params.dirName || 'NewFolder'
         let parentDirId = req.headers.parentdirid == "" ? directoryDB[0].id : req.headers.parentdirid
         let id = crypto.randomUUID()
         directoryDB.push({ id, dirName, files: [], directories: [], parentDirId })
         let parentDirObj = directoryDB.find((dirObj) => dirObj.id == parentDirId)
+        if (!parentDirObj) {
+            return res.status(404).json({ message: "parentDirectory does not exist" })
+
+        }
         parentDirObj.directories.push(id)
         writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        res.json('{what:dir Has been created}')
+        return res.status(201).json({ message: "Dir Has been created" })
     } catch (error) {
-        console.log(error);
-        res.json(error.message)
+        next(error)
     }
 })
 
 //renaming Directory
-router.patch('/:dirId', async (req, res) => {
+router.patch('/:dirId', async (req, res, next) => {
+    let dirid = req.params.dirId
+    let newName = req.headers.filename
+    let referencedDir = directoryDB.find((dirObj) => dirObj.id == dirid)
+    if (!referencedDir) {
+        return res.status(404).json({ message: "directory not found" })
+    }
+    referencedDir.dirName = newName
     try {
-        let dirid = req.params.dirId
-        let newName = req.headers.filename
-        let referencedDir = directoryDB.find((dirObj) => dirObj.id == dirid)
-        referencedDir.dirName = newName
-        writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        res.json('{what:dir Had updated directory Name}')
+        await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+        return res.status(200).json({ message: '{what:dir Had updated directory Name}' })
     } catch (error) {
-        res.json(error.message)
+        next(error)
     }
 })
 
 //deleting Directory
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
     try {
         let dirId = req.params.id
         await recursiveDeletionDirectory(dirId)
-
-        // console.log({ "filer": fileDB });
-        // console.log({ 'directort': directoryDB });
         writeFile('./directoryDB.json', JSON.stringify(directoryDB))
         writeFile('./fileDB.json', JSON.stringify(fileDB))
-
-
-        res.json(`We deleted directory Successfully !`)
-
+        res.status(200).json({ message: `We deleted directory Successfully !` })
     } catch (error) {
-        res.json(error.message)
+        next(error)
     }
 })
 

@@ -10,81 +10,83 @@ let route = express.Router()
 
 //Read
 route.get('/:id', (req, res, next) => {
-    try {
-        let id = req.params.id
-        let fileData = fileDB.find((fileData) => fileData.id == id)
-        let fullName = `${id}${fileData.extension}`
-        let fileObj = fileDB.find((fileObj) => fileObj.id == id)
-        let fileName = fileObj.fileName
-        if (req.query.action == 'download') res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
-        res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
-            if (err && !res.headersSent) {
-                res.status(404).send("File not found");
-            }
-        })
-    } catch (error) {
-        res.json(error.message)
+    let id = req.params.id
+    let fileData = fileDB.find((fileData) => fileData.id == id)
+    if (!fileData) {
+        return res.status(404).json({ message: "file Not found" })
     }
+    let fullName = `${id}${fileData.extension}`
+    let fileObj = fileDB.find((fileObj) => fileObj.id == id)
+    let fileName = fileObj.fileName
+
+    if (req.query.action == 'download') res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+    res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
+        if (err && !res.headersSent) {
+            res.status(404).send("File not found !");
+        }
+    })
 })
 
 //uploading
 route.post('/:fileName', (req, res) => {
-    try {
-        let fileName = req.params.fileName
 
-        let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
-        let id = crypto.randomUUID()
-        let extension = path.extname(fileName)
-        let fullPath = path.join(import.meta.dirname, '/../storage', id + extension)
-        let writeStream = createWriteStream(fullPath)
-        req.pipe(writeStream)
+    let fileName = req.params.fileName || 'Untitled'
 
-        console.log({ id, fileName, extension, parentId });
-        req.on('end', () => {
-            fileDB.push({ id, fileName, extension, parentId })
-            writeFile('./fileDB.json', JSON.stringify(fileDB))
-            res.json({ message: 'File has been sended' })
-            let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
-            refrenceDir.files.push(id)
-            writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        })
+    let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
+    let id = crypto.randomUUID()
+    let extension = path.extname(fileName)
+    let fullPath = path.join(import.meta.dirname, '/../storage', id + extension)
+    let writeStream = createWriteStream(fullPath)
+    req.pipe(writeStream)
 
-    } catch (error) {
-        res.json(error.message)
-    }
+    req.on('end', async () => {
+        fileDB.push({ id, fileName, extension, parentId })
+        let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
+        refrenceDir.files.push(id)
+        try {
+            await writeFile('./fileDB.json', JSON.stringify(fileDB))
+            await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+            res.status(201).json({ message: "File uploaded successfully" });
+
+        } catch (error) {
+            return res.status(500).json({ message: "something went wrong" })
+
+        }
+    })
 })
 
 //Delete file
-route.delete("/:id", async (req, res) => {
+route.delete("/:id", async (req, res, next) => {
     try {
         let fileid = req.params.id
         let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileid)
+        if (fileDataIndex == -1) {
+            return res.status(404).json({ message: "file not found" })
+        }
         let fileData = fileDB[fileDataIndex]
         let fullName = `${fileid}${fileDB[fileDataIndex].extension}`
         await rm(path.join(import.meta.dirname, '/../storage', fullName))
         fileDB.splice(fileDataIndex, 1)
         let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
         selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileid)
-
-        writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        writeFile('./fileDB.json', JSON.stringify(fileDB))
-
-        res.json(`We deleted ${req.params.fileName} Successfully !`)
-
+        await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+        await writeFile('./fileDB.json', JSON.stringify(fileDB))
+        res.status(200).json({ message: "File deleted successfully" });
     } catch (error) {
-        res.json(error.message)
+        next('error')
     }
 })
 
 //Update
-route.patch('/:id', async (req, res) => {
+route.patch('/:id', async (req, res, next) => {
     try {
         let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
         fileDataReference.fileName = req.body.fileName
-        writeFile('./fileDB.json', JSON.stringify(fileDB))
-        res.json(`File Has been Renamed`)
+        await writeFile('./fileDB.json', JSON.stringify(fileDB))
+        return res.status.josn({ message: "Renamed" })
     } catch (error) {
-        res.json('SELETC ONE FILE ATLEAT')
+        error.status = 510
+        next(error)
     }
 })
 
