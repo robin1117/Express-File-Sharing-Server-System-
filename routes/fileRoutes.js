@@ -31,28 +31,30 @@ route.get('/:id', (req, res, next) => {
 route.post('/:fileName', (req, res) => {
     try {
         let fileName = req.params.fileName
-        let parentId = req.headers.dirid == "undefined" ? directoryDB[0].id : req.headers.dirid
+
+        let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
         let id = crypto.randomUUID()
         let extension = path.extname(fileName)
         let fullPath = path.join(import.meta.dirname, '/../storage', id + extension)
         let writeStream = createWriteStream(fullPath)
         req.pipe(writeStream)
+
+        console.log({ id, fileName, extension, parentId });
         req.on('end', () => {
             fileDB.push({ id, fileName, extension, parentId })
             writeFile('./fileDB.json', JSON.stringify(fileDB))
             res.json({ message: 'File has been sended' })
-
             let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
             refrenceDir.files.push(id)
-
             writeFile('./directoryDB.json', JSON.stringify(directoryDB))
         })
+
     } catch (error) {
         res.json(error.message)
     }
 })
 
-//Delete file / folder
+//Delete file
 route.delete("/:id", async (req, res) => {
     try {
         let fileid = req.params.id
