@@ -4,7 +4,27 @@ import { rename, rm, writeFile } from 'fs/promises'
 import path from 'path'
 import fileDB from "../fileDB.json" with {type: "json"}
 import directoryDB from "../directoryDB.json" with {type: "json"}
+import multer from "multer";
 
+let storagePath = path.join(import.meta.dirname, '/../storage',)
+
+const storage = multer.diskStorage({
+    destination(req, file, cb) {
+        cb(null, storagePath);
+    },
+    filename(req, file, cb) {
+        const id = crypto.randomUUID();
+        const fileName = `${id}${path.extname(file.originalname)}`;
+        cb(null, fileName);
+    }
+});
+
+const upload = multer({
+    storage,
+    // limits: { fileSize: 2 * 1024 * 1024 } // 2MB
+});
+
+const uploadMiddleware = upload.single("file");
 
 let route = express.Router()
 
@@ -30,16 +50,12 @@ route.get('/:id', (req, res, next) => {
 //uploading
 route.post('/:fileName', (req, res) => {
 
-    let fileName = req.params.fileName || 'Untitled'
-
-    let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
-    let id = crypto.randomUUID()
-    let extension = path.extname(fileName)
-    let fullPath = path.join(import.meta.dirname, '/../storage', id + extension)
-    let writeStream = createWriteStream(fullPath)
-    req.pipe(writeStream)
-
-    req.on('end', async () => {
+    uploadMiddleware(req, res, async (err) => {
+        let fileName = req.params.fileName || 'Untitled'
+        let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
+        // console.log(path.parse(req.file.filename).name);
+        let id = path.parse(req.file.filename).name
+        let extension = path.extname(req.file.originalname)
         fileDB.push({ id, fileName, extension, parentId })
         let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
         refrenceDir.files.push(id)
