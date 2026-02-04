@@ -8,12 +8,14 @@ let router = express.Router()
 
 //serving Directory
 router.get(['/', '/:id'], async (req, res) => {
+    if (!req.params.id) {
+        return res.status(404).json({ message: "Need Directory Id aleast" })
+    }
 
     let id = req.params.id || directoryDB[0].id
-
     let indexDirectory = directoryDB.findIndex((directory) => directory.id == id)
     if (indexDirectory == -1) {
-        return res.status(404).json({ message: "Directoy not found" })
+        return res.status(404).json({ message: "Directory not found" })
     }
     let files = directoryDB[indexDirectory].files.map((fileId) => fileDB.find((fileObj) => fileObj.id == fileId))
     let directories = directoryDB[indexDirectory].directories.map((dirId) => directoryDB.find((dirObj) => dirObj.id == dirId))

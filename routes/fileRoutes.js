@@ -52,7 +52,10 @@ route.post('/:fileName', (req, res) => {
 
     uploadMiddleware(req, res, async (err) => {
         let fileName = req.params.fileName || 'Untitled'
-        let parentId = req.headers.dirid == undefined ? directoryDB[0].id : req.headers.dirid
+        if (req.headers.dirid == undefined) {
+            return res.status(404).json({ message: "Your Directory Id Not Found" })
+        }
+        let parentId = req.headers.dirid
         // console.log(path.parse(req.file.filename).name);
         let id = path.parse(req.file.filename).name
         let extension = path.extname(req.file.originalname)
