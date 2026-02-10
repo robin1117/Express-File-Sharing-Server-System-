@@ -1,1 +1,9 @@
-[{"id":"4e71cb2f-1530-451d-859c-da2380ce21ae","name":"nancy","email":"robinsingh@gmail.com","password":"abcd","rootDirId":"1a75af96-8713-4062-81ef-af24a6b009a0"}]
+[
+  {
+    "id": "4e71cb2f-1530-451d-859c-da2380ce21ae",
+    "name": "nancy",
+    "email": "robinsingh@gmail.com",
+    "password": "abcd",
+    "rootDirId": "1a75af96-8713-4062-81ef-af24a6b009a0"
+  }
+]

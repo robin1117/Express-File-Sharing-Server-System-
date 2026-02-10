@@ -1,5 +1,5 @@
 import express from 'express'
-import { createWriteStream, WriteStream } from 'fs'
+import { createWriteStream, unlink, WriteStream } from 'fs'
 import { rename, rm, writeFile } from 'fs/promises'
 import path from 'path'
 import fileDB from "../fileDB.json" with {type: "json"}
@@ -15,6 +15,7 @@ const storage = multer.diskStorage({
     filename(req, file, cb) {
         const id = crypto.randomUUID();
         const fileName = `${id}${path.extname(file.originalname)}`;
+        req._uploadPath = path.join(storagePath, fileName);
         cb(null, fileName);
     }
 });
@@ -50,6 +51,24 @@ route.get('/:id', (req, res, next) => {
 //uploading
 route.post('/:fileName', (req, res) => {
 
+    let cleaned = false;
+
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        console.log(req._uploadPath);
+        if (req._uploadPath) {
+            unlink(req._uploadPath, () => {
+                console.log('🧹 partial file deleted');
+            });
+        }
+    };
+
+    req.on('aborted', () => {
+        cleanup()
+    });
+
+
     uploadMiddleware(req, res, async (err) => {
         let fileName = req.params.fileName || 'Untitled'
         if (req.headers.dirid == undefined) {
@@ -60,6 +79,7 @@ route.post('/:fileName', (req, res) => {
         let id = path.parse(req.file.filename).name
         let extension = path.extname(req.file.originalname)
         fileDB.push({ id, fileName, extension, parentId })
+
         let refrenceDir = directoryDB.find((dir) => dir.id == parentId)
         refrenceDir.files.push(id)
         try {
@@ -69,7 +89,6 @@ route.post('/:fileName', (req, res) => {
 
         } catch (error) {
             return res.status(500).json({ message: "something went wrong" })
-
         }
     })
 })
@@ -92,7 +111,7 @@ route.delete("/:id", async (req, res, next) => {
         await writeFile('./fileDB.json', JSON.stringify(fileDB))
         res.status(200).json({ message: "File deleted successfully" });
     } catch (error) {
-        next('error')
+        next(error)
     }
 })
 
@@ -102,7 +121,7 @@ route.patch('/:id', async (req, res, next) => {
         let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
         fileDataReference.fileName = req.body.fileName
         await writeFile('./fileDB.json', JSON.stringify(fileDB))
-        return res.status.josn({ message: "Renamed" })
+        return res.status(200).json({ message: "Renamed" })
     } catch (error) {
         error.status = 510
         next(error)

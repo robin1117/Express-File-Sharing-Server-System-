@@ -1,9 +1,10 @@
 import express from 'express'
-let app = express()
 import directoryRoutes from "./routes/directoryRoute.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import cors from 'cors';
+
+let app = express()
 
 app.use(express.json())
 app.use(cors())
