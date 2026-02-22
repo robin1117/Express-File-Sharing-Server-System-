@@ -3,40 +3,45 @@ import { mkdir, readdir, rm, writeFile } from 'fs/promises'
 import path from 'path'
 import directoryDB from "../directoryDB.json" with {type: "json"}
 import fileDB from "../fileDB.json" with {type: "json"}
+import userDB from "../userDB.json" with {type: "json"}
 
 let router = express.Router()
 
 //serving Directory
 router.get(['/', '/:id'], async (req, res) => {
-    if (!req.params.id) {
-        return res.status(404).json({ message: "Need Directory Id aleast" })
-    }
+    // let user = req.user
 
-    let id = req.params.id || directoryDB[0].id
-    
+    // let DirectoryId = req.params.id || req.user.rootDirId
+
+    // let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+
+    // if (directoryData.userId !== req.user.id) {
+    //     return res.status(404).json({ message: "You are trying to access someone`s other Directory" })
+    // }
+
+    let id = req.params.id || req.user.rootDirId
     let indexDirectory = directoryDB.findIndex((directory) => directory.id == id)
     if (indexDirectory == -1) {
-        return res.status(404).json({ message: "Directory not found" })
+        return res.status(404).json({ error: "Directory not found" })
     }
     let files = directoryDB[indexDirectory].files.map((fileId) => fileDB.find((fileObj) => fileObj.id == fileId))
     let directories = directoryDB[indexDirectory].directories.map((dirId) => directoryDB.find((dirObj) => dirObj.id == dirId))
-
     return res.status(200).json({ ...directoryDB[indexDirectory], directories, files })
-
 })
 
 //creating folder
 router.post(['/', '/:dirName'], async (req, res, next) => {
     try {
         let dirName = req.params.dirName || 'NewFolder'
-        let parentDirId = req.headers.parentdirid == "" ? directoryDB[0].id : req.headers.parentdirid
         let id = crypto.randomUUID()
-        directoryDB.push({ id, dirName, files: [], directories: [], parentDirId })
-        let parentDirObj = directoryDB.find((dirObj) => dirObj.id == parentDirId)
+        directoryDB.push({ id, dirName, files: [], directories: [], userId: req.cookies.uid, parentDirId: req.user.rootDirId })
+
+        let parentDirObj = directoryDB.find((dirObj) => dirObj.id == req.user.rootDirId)
+
         if (!parentDirObj) {
             return res.status(404).json({ message: "parentDirectory does not exist" })
-
         }
+
         parentDirObj.directories.push(id)
         writeFile('./directoryDB.json', JSON.stringify(directoryDB))
         return res.status(201).json({ message: "Dir Has been created" })

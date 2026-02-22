@@ -2,8 +2,11 @@ import express from 'express'
 import { writeFile } from 'fs/promises'
 import directoryDB from "../directoryDB.json" with {type: "json"}
 import userDB from "../userDB.json" with {type: "json"}
+import cors from "cors";
+import auth from './auth.js';
 
 let route = express.Router()
+
 
 route.post('/register', async (req, res, next) => {
     const { name, email, password } = req.body
@@ -43,7 +46,9 @@ route.post('/register', async (req, res, next) => {
 })
 
 route.post('/login', async (req, res, next) => {
-    const { name, email, password } = req.body
+
+    const { email, password } = req.body
+    console.log(req.body);
     let user = userDB.find((user) => user.email === email)
 
     if (!user) {
@@ -52,9 +57,26 @@ route.post('/login', async (req, res, next) => {
     if (user.password !== password) {
         return res.status(401).json({ message: "", error: 'Invalid Credientials' })
     }
-    let rootDirId = user.rootDirId
-    return res.status(200).json({ message: "Login Susscess", status: "success", rootDirId })
 
+    res.cookie('uid', user.id, {
+        secure: 'secure',
+        maxAge: 1000 * 60 * 60,
+        httpOnly: true
+    })
+
+    return res.status(200).json({ message: "Login Susscess" })
+
+})
+
+route.get('/', auth, (req, res) => {
+    res.status(200).json({ name: req.user.name, email: req.user.email })
+})
+
+route.post('/logout', (req, res) => {
+    res.cookie('uid', "", {
+        maxAge: 0
+    })
+    res.status(200).json({ message: 'Loggedout' })
 })
 
 export default route
