@@ -123,7 +123,11 @@ route.get('/:id', userValidator, (req, res, next) => {
     let fileObj = fileDB.find((fileObj) => fileObj.id == fileId)
     let fileName = fileObj.fileName
 
-    if (req.query.action == 'download') res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+    if (req.query.action == 'download') {
+        res.download(path.join(import.meta.dirname, '/../storage', fullName), fileName) 
+        // res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+    }
+
     res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
         if (err && !res.headersSent) {
             res.status(404).send("File not found !");
