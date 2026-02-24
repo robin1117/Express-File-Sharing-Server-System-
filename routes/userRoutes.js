@@ -5,10 +5,10 @@ import userDB from "../userDB.json" with {type: "json"}
 import cors from "cors";
 import auth from './auth.js';
 
-let route = express.Router()
+let router = express.Router()
 
 
-route.post('/register', async (req, res, next) => {
+router.post('/register', async (req, res, next) => {
     const { name, email, password } = req.body
     const rootDirId = crypto.randomUUID()
     const userId = crypto.randomUUID()
@@ -45,7 +45,7 @@ route.post('/register', async (req, res, next) => {
     }
 })
 
-route.post('/login', async (req, res, next) => {
+router.post('/login', async (req, res, next) => {
 
     const { email, password } = req.body
     console.log(req.body);
@@ -68,15 +68,15 @@ route.post('/login', async (req, res, next) => {
 
 })
 
-route.get('/', auth, (req, res) => {
+router.get('/', auth, (req, res) => {
     res.status(200).json({ name: req.user.name, email: req.user.email })
 })
 
-route.post('/logout', (req, res) => {
+router.post('/logout', (req, res) => {
     res.cookie('uid', "", {
         maxAge: 0
     })
     res.status(200).json({ message: 'Loggedout' })
 })
 
-export default route
+export default router

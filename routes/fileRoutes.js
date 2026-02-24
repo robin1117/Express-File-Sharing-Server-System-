@@ -45,10 +45,10 @@ const upload = multer({
 
 const uploadMiddleware = upload.single("file");
 
-let route = express.Router()
+let router = express.Router()
 
 //uploading
-route.post('/:fileName', (req, res) => {
+router.post('/:fileName', (req, res) => {
     let uid = req.user.id
     let parentDir = directoryDB.find((directory) => directory.userId == uid)
     // if (!parentDir) {
@@ -98,6 +98,7 @@ function userValidator(req, res, next) {
     let fileId = req.params.id
 
     let fileData = fileDB.find((fileData) => fileData.id == fileId)
+    if (!fileData) return res.status(404).json({ message: "File Not Available😏" })
     let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
     if (directoryData.userId !== req.user.id) {
         return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
@@ -105,66 +106,131 @@ function userValidator(req, res, next) {
     next()
 }
 
-//Read
-route.get('/:id', userValidator, (req, res, next) => {
-    let fileId = req.params.id
+// //Read
+// router.get('/:id', userValidator, (req, res, next) => {
+//     let fileId = req.params.id
 
-    let fileData = fileDB.find((fileData) => fileData.id == fileId)
-    let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+//     let fileData = fileDB.find((fileData) => fileData.id == fileId)
+//     let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
 
-    if (directoryData.userId !== req.user.id) {
-        return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
-    }
+//     if (directoryData.userId !== req.user.id) {
+//         return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
+//     }
 
-    if (!fileData) {
-        return res.status(404).json({ message: "file Not found" })
-    }
-    let fullName = `${fileId}${fileData.extension}`
-    let fileObj = fileDB.find((fileObj) => fileObj.id == fileId)
-    let fileName = fileObj.fileName
+//     if (!fileData) {
+//         return res.status(404).json({ message: "file Not found" })
+//     }
+//     let fullName = `${fileId}${fileData.extension}`
+//     let fileObj = fileDB.find((fileObj) => fileObj.id == fileId)
+//     let fileName = fileObj.fileName
 
-    if (req.query.action == 'download') {
-        res.download(path.join(import.meta.dirname, '/../storage', fullName), fileName) 
-        // res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
-    }
+//     if (req.query.action == 'download') {
+//         res.download(path.join(import.meta.dirname, '/../storage', fullName), fileName)
+//         // res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+//     }
 
-    res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
-        if (err && !res.headersSent) {
-            res.status(404).send("File not found !");
+//     res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
+//         if (err && !res.headersSent) {
+//             res.status(404).send("File not found !");
+//         }
+//     })
+// })
+
+// //Delete file
+// router.delete("/:id", userValidator, async (req, res, next) => {
+//     try {
+//         let fileId = req.params.id
+
+//         let fileData = fileDB.find((fileData) => fileData.id == fileId)
+//         let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+//         if (directoryData.userId !== req.user.id) {
+//             return res.status(404).json({ message: "You are trying to access someone`s other file😏 or file not exist" })
+//         }
+
+//         let fullName = `${fileId}${fileData.extension}`
+//         let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileId)
+//         await rm(path.join(import.meta.dirname, '/../storage', fullName))
+//         fileDB.splice(fileDataIndex, 1)
+
+//         let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
+//         selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileId)
+//         await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+//         await writeFile('./fileDB.json', JSON.stringify(fileDB))
+//         res.status(200).json({ message: "File deleted successfully" });
+//     } catch (error) {
+//         next(error)
+//     }
+// })
+
+// //Update
+// router.patch('/:id', userValidator, async (req, res, next) => {
+//     try {
+//         let fileId = req.params.id
+//         let fileData = fileDB.find((fileData) => fileData.id == fileId)
+//         let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+
+//         if (directoryData.userId !== req.user.id) {
+//             return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
+//         }
+
+//         // let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
+//         fileData.fileName = req.body.fileName
+//         await writeFile('./fileDB.json', JSON.stringify(fileDB))
+//         return res.status(200).json({ message: "Renamed" })
+//     } catch (error) {
+//         error.status = 510
+//         next(error)
+//     }
+// })
+
+//This is one the way we can Group our routes while using ExpressJS
+router.route("/:id")
+    .patch(userValidator, async (req, res, next) => {
+        try {
+            let fileId = req.params.id
+            let fileData = fileDB.find((fileData) => fileData.id == fileId)
+            let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+
+            if (directoryData.userId !== req.user.id) {
+                return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
+            }
+
+            // let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
+            fileData.fileName = req.body.fileName
+            await writeFile('./fileDB.json', JSON.stringify(fileDB))
+            return res.status(200).json({ message: "Renamed" })
+        } catch (error) {
+            error.status = 510
+            next(error)
         }
     })
-})
+    .delete(userValidator, async (req, res, next) => {
+        try {
+            let fileId = req.params.id
 
-//Delete file
-route.delete("/:id", userValidator, async (req, res, next) => {
-    try {
-        let fileId = req.params.id
+            let fileData = fileDB.find((fileData) => fileData.id == fileId)
+            let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
+            if (directoryData.userId !== req.user.id) {
+                return res.status(404).json({ message: "You are trying to access someone`s other file😏 or file not exist" })
+            }
 
-        let fileData = fileDB.find((fileData) => fileData.id == fileId)
-        let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
-        if (directoryData.userId !== req.user.id) {
-            return res.status(404).json({ message: "You are trying to access someone`s other file😏 or file not exist" })
+            let fullName = `${fileId}${fileData.extension}`
+            let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileId)
+            await rm(path.join(import.meta.dirname, '/../storage', fullName))
+            fileDB.splice(fileDataIndex, 1)
+
+            let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
+            selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileId)
+            await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
+            await writeFile('./fileDB.json', JSON.stringify(fileDB))
+            res.status(200).json({ message: "File deleted successfully" });
+        } catch (error) {
+            next(error)
         }
-
-        let fullName = `${fileId}${fileData.extension}`
-        let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileId)
-        await rm(path.join(import.meta.dirname, '/../storage', fullName))
-        fileDB.splice(fileDataIndex, 1)
-
-        let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
-        selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileId)
-        await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        await writeFile('./fileDB.json', JSON.stringify(fileDB))
-        res.status(200).json({ message: "File deleted successfully" });
-    } catch (error) {
-        next(error)
-    }
-})
-
-//Update
-route.patch('/:id', userValidator, async (req, res, next) => {
-    try {
+    })
+    .get(userValidator, (req, res, next) => {
         let fileId = req.params.id
+
         let fileData = fileDB.find((fileData) => fileData.id == fileId)
         let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
 
@@ -172,14 +238,24 @@ route.patch('/:id', userValidator, async (req, res, next) => {
             return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
         }
 
-        // let fileDataReference = fileDB.find((fileData) => req.params.id == fileData.id)
-        fileData.fileName = req.body.fileName
-        await writeFile('./fileDB.json', JSON.stringify(fileDB))
-        return res.status(200).json({ message: "Renamed" })
-    } catch (error) {
-        error.status = 510
-        next(error)
-    }
-})
+        if (!fileData) {
+            return res.status(404).json({ message: "file Not found" })
+        }
+        let fullName = `${fileId}${fileData.extension}`
+        let fileObj = fileDB.find((fileObj) => fileObj.id == fileId)
+        let fileName = fileObj.fileName
 
-export default route
+        if (req.query.action == 'download') {
+            res.download(path.join(import.meta.dirname, '/../storage', fullName), fileName)
+            // res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+        }
+
+        res.sendFile(path.join(import.meta.dirname, '/../storage', fullName), (err) => {
+            if (err && !res.headersSent) {
+                res.status(404).send("File not found !");
+            }
+        })
+    })
+
+
+export default router
