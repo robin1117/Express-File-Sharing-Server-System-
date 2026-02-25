@@ -4,7 +4,7 @@ import fileRoutes from "./routes/fileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
-import auth from './routes/auth.js';
+import auth from './middlewares/auth.js';
 
 let app = express()
 

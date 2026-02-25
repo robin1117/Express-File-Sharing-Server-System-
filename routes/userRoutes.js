@@ -3,7 +3,7 @@ import { writeFile } from 'fs/promises'
 import directoryDB from "../directoryDB.json" with {type: "json"}
 import userDB from "../userDB.json" with {type: "json"}
 import cors from "cors";
-import auth from './auth.js';
+import auth from '../middlewares/auth.js';
 
 let router = express.Router()
 

@@ -106,6 +106,13 @@ function userValidator(req, res, next) {
     next()
 }
 
+//That router.param() check wheather if incomming id is valid of not before before touching DataBase
+router.param('id', (req, res, next, id) => {
+    if (id.length !== 36) {
+        return res.status(404).json({ error: "Invalid Id :" + id })
+    }
+    next()
+})
 // //Read
 // router.get('/:id', userValidator, (req, res, next) => {
 //     let fileId = req.params.id
