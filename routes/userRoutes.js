@@ -9,6 +9,7 @@ let router = express.Router()
 
 
 router.post('/register', async (req, res, next) => {
+
     const { name, email, password } = req.body
     const rootDirId = crypto.randomUUID()
     const userId = crypto.randomUUID()
@@ -46,6 +47,8 @@ router.post('/register', async (req, res, next) => {
 })
 
 router.post('/login', async (req, res, next) => {
+    let db = req.db
+    console.log(db.namespace);
 
     const { email, password } = req.body
     console.log(req.body);
