@@ -14,7 +14,7 @@ try {
 
     app.use((req, res, next) => {
         req.db = db
-        next() 
+        next()
     })
 
     app.use(express.json())

@@ -4,42 +4,48 @@ import directoryDB from "../directoryDB.json" with {type: "json"}
 import userDB from "../userDB.json" with {type: "json"}
 import cors from "cors";
 import auth from '../middlewares/auth.js';
+import { Db } from 'mongodb';
 
 let router = express.Router()
 
 
 router.post('/register', async (req, res, next) => {
-
+    let db = req.db
     const { name, email, password } = req.body
     const rootDirId = crypto.randomUUID()
-    const userId = crypto.randomUUID()
+    // const userId = crypto.randomUUID()
 
-    let userThatExist = userDB.find((user) => user.email == email)
+    let userThatExist = await db.collection('userDB').findOne({ email: email })
 
     if (userThatExist) {
         return res.status(409).json({ message: "Try with different Email bro", error: 'user already exist' })
     }
 
-    userDB.push({
-        id: userId,
+    let userId = await db.collection('userDB').insertOne({
         name,
         email: email,
         password,
         rootDirId
     })
 
-    directoryDB.push({
-        id: rootDirId,
+    let insertedUserID = userId.insertedId
+
+    let directoryId = await db.collection('directoryDB').insertOne({
         name: `root-${email}`,
         dirName: 'root',
-        userId,
+        userId: insertedUserID,
         parentDirId: null,
-        files: [],
-        directories: []
     })
+
+    let insertedDirectoryID = directoryId.insertedId
+
+    db.collection("userDB").updateOne({ _id: insertedUserID }, { $set: { rootDirId: insertedDirectoryID } })
+
+
+    // console.log(directoryId);
+
+
     try {
-        await writeFile('./userDB.json', JSON.stringify(userDB))
-        await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
         return res.status(201).json({ message: "New User Generated", status: "success" });
     } catch (error) {
         next(error)
@@ -51,17 +57,17 @@ router.post('/login', async (req, res, next) => {
     console.log(db.namespace);
 
     const { email, password } = req.body
-    console.log(req.body);
-    let user = userDB.find((user) => user.email === email)
 
+    let user = await db.collection('userDB').findOne({ email: email, password: password })
+    console.log();
+
+ 
     if (!user) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'user dosen`t exist' })
     }
-    if (user.password !== password) {
-        return res.status(401).json({ message: "", error: 'Invalid Credientials' })
-    }
 
-    res.cookie('uid', user.id, {
+
+    res.cookie('uid', user._id.toString(), {
         secure: 'secure',
         maxAge: 1000 * 60 * 60,
         httpOnly: true
