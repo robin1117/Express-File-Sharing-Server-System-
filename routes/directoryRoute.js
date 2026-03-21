@@ -73,8 +73,6 @@ router.delete("/:id", async (req, res, next) => {
     try {
         let dirId = req.params.id
         await recursiveDeletionDirectory(dirId, req)
-        // writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-        // writeFile('./fileDB.json', JSON.stringify(fileDB))
         res.status(200).json({ message: `We deleted directory Successfully !` })
     } catch (error) {
         next(error)
@@ -85,43 +83,30 @@ router.delete("/:id", async (req, res, next) => {
 async function recursiveDeletionDirectory(id, req) {
     let dirId = id
     let db = req.db
-    let data = await db.collection('directoryDB').find({ _id: new ObjectId(dirId) }).toArray()
-    let data1 = await db.collection('directoryDB').find({ parentDirId: new ObjectId(dirId) }).toArray()
-    console.log(data1);
-    return
-    let fileDataIndex = directoryDB.findIndex((fileData) => fileData.id == dirId)
-    let filesArr = directoryDB[fileDataIndex].files
-    let nestedDirectoriesArr = directoryDB[fileDataIndex].directories
-    let patentid = directoryDB[fileDataIndex].parentDirId
 
-    if (filesArr.length) {
-        for await (let id of filesArr) {
-            console.log('deletingFile', id);
-            let fileid = id
-            let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileid)
-            let fullName = `${fileid}${fileDB[fileDataIndex].extension}`
+    let directCollection = await db.collection('directoryDB').find({ parentDirId: new ObjectId(dirId) }).toArray()
+    let fileCollection = await db.collection('fileDB').find({ parentId: new ObjectId(dirId) }).toArray()
+
+    if (fileCollection.length) {
+        for await (let fileObject of fileCollection) {
+            let fileid = fileObject._id
+            let fullName = `${fileid}${fileObject.extension}`
             try {
                 await rm(path.join(import.meta.dirname, '/../storage', fullName))
-                fileDB.splice(fileDataIndex, 1)
+                await db.collection('fileDB').deleteOne({ _id: new ObjectId(fileid) })
             } catch (error) {
                 console.log('file Not found or deletd already');
             }
         }
-
     }
-    if (nestedDirectoriesArr.length) {
-        for (let id of nestedDirectoriesArr) {
-            await recursiveDeletionDirectory(id)
+    if (directCollection.length) {
+        for (let dirObject of directCollection) {
+            console.log(dirObject._id);
+            await recursiveDeletionDirectory(dirObject._id, req)
         }
     }
+    await db.collection('directoryDB').deleteOne({ _id: new ObjectId(dirId) })
 
-    let parentDirObj = directoryDB.find((dirObj) => dirObj.id == patentid)
-    let filterendDirectoriesArr = parentDirObj.directories.filter((directoriesId) => directoriesId !== dirId)
-    parentDirObj.directories = filterendDirectoriesArr
-    directoryDB.splice(fileDataIndex, 1)
-
-    // writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-    // writeFile('./fileDB.json', JSON.stringify(fileDB))
 }
 
 
