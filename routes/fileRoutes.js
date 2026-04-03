@@ -2,8 +2,6 @@ import express from 'express'
 import { createWriteStream, unlink, WriteStream } from 'fs'
 import { rename, rm, writeFile } from 'fs/promises'
 import path from 'path'
-import fileDB from "../fileDB.json" with {type: "json"}
-import directoryDB from "../directoryDB.json" with {type: "json"}
 import multer from "multer";
 import { Db, ObjectId } from 'mongodb'
 
@@ -105,7 +103,7 @@ function userValidator(req, res, next) {
 
 //That router.param() check wheather if incomming id is valid of not before before touching DataBase
 router.param('id', (req, res, next, id) => {
-    if (id.length !== 24) {
+    if (!ObjectId.isValid(id)) {
         return res.status(404).json({ error: "Invalid Id :" + id })
     }
     next()

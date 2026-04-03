@@ -1,16 +1,13 @@
 import express, { json } from 'express'
 import { mkdir, readdir, rm, writeFile } from 'fs/promises'
 import path from 'path'
-// import directoryDB from "../directoryDB.json" with {type: "json"}
-import fileDB from "../fileDB.json" with {type: "json"}
-import userDB from "../userDB.json" with {type: "json"}
 import { Db, ObjectId } from 'mongodb'
 
 let router = express.Router()
 
 //That router.param() check wheather if incomming id is valid of not before before touching DataBase
 router.param('id', (req, res, next, id) => {
-    if (id.length !== 24) {
+    if (!ObjectId.isValid(id)) {
         return res.status(404).json({ error: "Invalid Id" })
     }
     next()
@@ -22,7 +19,8 @@ router.post(['/', '/:dirName'], async (req, res, next) => {
         let rootDirId = req.headers.parentdirid == "undefined" ? req.user.rootDirId : req.headers.parentdirid
         let dirName = req.params.dirName || 'NewFolder'
         let db = req.db
-        let createdDir = await db.collection('directoryDB').insertOne({ dirName, userId: req.cookies.uid, parentDirId: new ObjectId(rootDirId) })
+        let createdDir = await db.collection('directoryDB').insertOne({ _id: new ObjectId(), dirName, userId: new ObjectId(req.cookies.uid), parentDirId: new ObjectId(rootDirId) })
+        console.log(createdDir);
 
         return res.status(201).json({ message: "Dir Has been created" })
     } catch (error) {
@@ -56,9 +54,9 @@ router.get(['/', '/:id'], async (req, res) => {
 
 //renaming Directory
 router.patch('/:id', async (req, res, next) => {
-    console.log('dirid');
     let dirid = req.params.id
-    let newName = req.headers.filename
+    let newName = req.body.fileName
+    console.log(newName);
     let db = req.db
     try {
         let o = await db.collection('directoryDB').updateOne({ _id: new ObjectId(dirid) }, { $set: { dirName: newName } })
