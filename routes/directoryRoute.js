@@ -20,10 +20,9 @@ router.post(['/', '/:dirName'], async (req, res, next) => {
         let dirName = req.params.dirName || 'NewFolder'
         let db = req.db
         let createdDir = await db.collection('directoryDB').insertOne({ _id: new ObjectId(), dirName, userId: new ObjectId(req.cookies.uid), parentDirId: new ObjectId(rootDirId) })
-        console.log(createdDir);
-
         return res.status(201).json({ message: "Dir Has been created" })
     } catch (error) {
+        // console.log(error);
         next(error)
     }
 })

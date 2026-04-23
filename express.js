@@ -10,8 +10,8 @@ import { connectDB } from './config/db.js';
 try {
     let db = await connectDB()
     // console.log(await db.listCollections().toArray()); //for listing all collections in my db
-    let app = express()
 
+    let app = express()
     app.use((req, res, next) => {
         req.db = db
         next()
