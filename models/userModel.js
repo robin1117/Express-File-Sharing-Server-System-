@@ -8,7 +8,7 @@ let usrSchema = new Schema({
     email: {
         type: String,
         required: true,
-        // unique: true,
+        unique: true,
         // match: [
         //     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
         //     "Please enter a valid email"

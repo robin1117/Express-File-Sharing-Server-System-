@@ -11,11 +11,7 @@ export const userRegister = async (req, res, next) => {
     const rootDirId = new Types.ObjectId();
     const userId = new Types.ObjectId();
 
-    let userThatExist = await directoryModel.findOne({ email: email })
-
-    if (userThatExist) {
-        return res.status(409).json({ message: "Try with different Email bro", error: 'user already exist' })
-    }
+    // let userThatExist = await usrModel.findOne({ email })
 
     let session = await startSession()
 
@@ -37,12 +33,21 @@ export const userRegister = async (req, res, next) => {
             rootDirId
         }, { session })
         session.commitTransaction()
-
         return res.status(201).json({ message: "New User Generated", status: "success" });
+
     } catch (error) {
+        
         session.abortTransaction()
-        console.log(error.code);//121
-        next(error.error = "Document failed validation(Email)")
+        if (error.code == 121) {
+            return res.status(400).json({ error: 'Invalid input user already exist' })
+        } else if (error.code == 11000) {
+            if (error.keyValue.email) {
+                return res.status(409).json({ message: "Try with different Email bro", error: 'This Email already exist' })
+            }
+        }
+        else {
+            next(error.error = "Document failed validation(Email)")
+        }
     }
 }
 
