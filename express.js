@@ -5,17 +5,18 @@ import userRoutes from "./routes/userRoutes.js";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import auth from './middlewares/auth.js';
-import { connectDB } from './config/db.js';
+import './config/db.js';
 
 try {
-    let db = await connectDB()
+    // let db = await connectDB()
     // console.log(await db.listCollections().toArray()); //for listing all collections in my db
 
     let app = express()
-    app.use((req, res, next) => {
-        req.db = db
-        next()
-    })
+
+    // app.use((req, res, next) => {
+    //     req.db = db
+    //     next()
+    // })
 
     app.use(express.json())
     app.use(cookieParser())
@@ -38,9 +39,9 @@ try {
     app.use('/file', auth, fileRoutes)
     app.use('/user', userRoutes)
 
-    app.use((error, req, res, next) => {
-        res.status(error.status || 500).json({ message: "something went wrong !", error })
-    })
+    // app.use((error, req, res, next) => {
+    //     res.status(error.status || 500).json({ message: "something went wrong !", error })
+    // })
 
     let ser = app.listen(5000, '0.0.0.0', () => {
         console.log(ser.address())

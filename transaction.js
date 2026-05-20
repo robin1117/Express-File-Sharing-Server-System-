@@ -18,7 +18,6 @@ try {
     await directories.insertOne({ name: "db", userName: "AS" }, { session });
     await users.insertOne({ name: "AS", rooDirName: "db" }, { session });
     await session.commitTransaction();
-
 } catch (err) {
     console.log(err);
     await session.abortTransaction();
