@@ -36,7 +36,7 @@ export const userRegister = async (req, res, next) => {
         return res.status(201).json({ message: "New User Generated", status: "success" });
 
     } catch (error) {
-        
+
         session.abortTransaction()
         if (error.code == 121) {
             return res.status(400).json({ error: 'Invalid input user already exist' })
@@ -65,13 +65,14 @@ export const userLogin = async (req, res, next) => {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'you are`t Neha 🤔' })
     }
 
-    res.cookie('uid', user._id.toString(), {
-        secure: 'secure',
-        // secure: true,
-        maxAge: 1000 * 60 * 60,
-        httpOnly: true,
-        sameSite: "none"
-    })
+    res.cookie('uid', user._id.toString() + Math.round((Date.now() / 1000) + 20).toString(16)
+        , {
+            secure: 'secure',
+            // secure: true,
+            maxAge: 1000 * 60 * 60,
+            httpOnly: true,
+            sameSite: "none"
+        })
 
     return res.status(200).json({ message: "Login Susscess" })
 

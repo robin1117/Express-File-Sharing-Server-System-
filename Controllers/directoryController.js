@@ -50,7 +50,7 @@ export const renamingDirectory = async (req, res, next) => {
     let dirid = req.params.id
     let newName = req.body.fileName
     console.log(newName);
-    let db = req.db
+    // let db = req.db
     try {
         // let o = await db.collection('directoryDB').updateOne({ _id: new ObjectId(dirid) }, { $set: { dirName: newName } })
         await directoryModel.findOneAndUpdate({ _id: new ObjectId(dirid) }, { $set: { dirName: newName } })

@@ -39,9 +39,9 @@ try {
     app.use('/file', auth, fileRoutes)
     app.use('/user', userRoutes)
 
-    // app.use((error, req, res, next) => {
-    //     res.status(error.status || 500).json({ message: "something went wrong !", error })
-    // })
+    app.use((error, req, res, next) => {
+        res.status(error.status || 500).json({ message: "something went wrong !", error })
+    })
 
     let ser = app.listen(5000, '0.0.0.0', () => {
         console.log(ser.address())
