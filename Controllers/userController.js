@@ -65,7 +65,12 @@ export const userLogin = async (req, res, next) => {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'you are`t Neha 🤔' })
     }
 
-    res.cookie('uid', user._id.toString() + Math.round((Date.now() / 1000) + 20).toString(16)
+    let uidObj = {
+        usrId: user._id.toString(),
+        expiryTime: Math.round((Date.now() / 1000) + 20).toString(16),
+    }
+
+    res.cookie('uid', Buffer.from(JSON.stringify(uidObj), 'utf8').toString('base64')
         , {
             secure: 'secure',
             // secure: true,
