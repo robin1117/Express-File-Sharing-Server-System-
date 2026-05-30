@@ -2,7 +2,9 @@ import { ObjectId } from "mongodb"
 import usrModel from "../models/userModel.js"
 import directoryModel from "../models/directoryModel.js"
 import { startSession, Types } from "mongoose"
+import crypto from "node:crypto";
 
+export let secretKey = "mynameisrobin159753"
 
 export const userRegister = async (req, res, next) => {
     // let db = req.db
@@ -60,17 +62,23 @@ export const userLogin = async (req, res, next) => {
     let user = await usrModel.findOne({ email: email.toLowerCase(), password: password }).lean()
     // let user = await usrModel.find()
 
-    console.log(user, email, password);
+    // console.log(user);
+
     if (!user) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'you are`t Neha 🤔' })
     }
 
-    let uidObj = {
+    let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),
-        expiryTime: Math.round((Date.now() / 1000) + 20).toString(16),
-    }
+        expiryTime: Math.round((Date.now() / 1000) + 10000).toString(16),
+    })
 
-    res.cookie('uid', Buffer.from(JSON.stringify(uidObj), 'utf8').toString('base64')
+
+    let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
+    let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
+
+
+    res.cookie('token', signedCookiePayload
         , {
             secure: 'secure',
             // secure: true,
@@ -89,7 +97,7 @@ export const userGet = (req, res) => {
 
 export const userLogout = (req, res) => {
     console.log('Attempting logout');
-    res.cookie('uid', "", {
+    res.cookie('token', "", {
         maxAge: 0,
         sameSite: "none",
         secure: 'secure',

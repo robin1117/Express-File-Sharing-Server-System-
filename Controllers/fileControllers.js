@@ -11,17 +11,12 @@ export const updadingFileName = async (req, res, next) => {
     try {
         let db = req.db
         let fileId = req.params.id
-        // let fileData = await db.collection('fileDB').findOne({ _id: new ObjectId(fileId) })
         let fileData = await fleModel.findOne({ _id: new ObjectId(fileId) })
-        // let directoryData = await db.collection('directoryDB').findOne({ _id: new ObjectId(fileData.parentId) })
         let directoryData = await directoryModel.findOne({ _id: new ObjectId(fileData.parentId) })
-
         if (directoryData.userId.toString() !== req.user._id.toString()) {
             return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
         }
-        // await db.collection('fileDB').updateOne({ _id: new ObjectId(fileId) }, { $set: { fileName: req.body.fileName } })
         await fleModel.updateOne({ _id: new ObjectId(fileId) }, { $set: { fileName: req.body.fileName } })
-        // await writeFile('./fileDB.json', JSON.stringify(fileDB))
         return res.status(200).json({ message: "Renamed" })
     } catch (error) {
         error.status = 510
@@ -32,9 +27,7 @@ export const deletingFileName = async (req, res, next) => {
     try {
 
         let fileId = req.params.id
-        // let fileData = await db.collection('fileDB').findOne({ _id: new ObjectId(fileId) })
         let fileData = await fleModel.findOne({ _id: new ObjectId(fileId) })
-        // let directoryData = await db.collection('directoryDB').findOne({ _id: new ObjectId(fileData.parentId) })
         let directoryData = await directoryModel.findOne({ _id: new ObjectId(fileData.parentId) })
 
         if (directoryData.userId.toString() !== req.user._id.toString()) {
@@ -59,12 +52,9 @@ export const deletingFileName = async (req, res, next) => {
 }
 export const OpenDowanloadFileName = async (req, res, next) => {
     let fileId = req.params.id
-    let db = req.db
+    let fileData = await fleModel.findById(fileId)
 
-    // let fileData = await db.collection('fileDB').findOne({ _id: new ObjectId(fileId) })
-    let fileData = await fleModel.findOne({ _id: new ObjectId(fileId) })
-    // let directoryData = await db.collection('directoryDB').findOne({ _id: new ObjectId(fileData.parentId) })
-    let directoryData = await directoryModel.findOne({ _id: new ObjectId(fileData.parentId) })
+    let directoryData = await directoryModel.findById(fileData.parentId)
 
     if (directoryData.userId.toString() !== req.user._id.toString()) {
         return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
