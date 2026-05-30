@@ -14,9 +14,11 @@ export const userRegister = async (req, res, next) => {
     const userId = new Types.ObjectId();
 
     // let userThatExist = await usrModel.findOne({ email })
+    console.log(password);
+    let hashedpassword = crypto.createHash('sha256').update(password).digest("base64url")
+    console.log(hashedpassword);
 
     let session = await startSession()
-
     try {
         session.startTransaction()
         await directoryModel.insertOne({
@@ -31,7 +33,7 @@ export const userRegister = async (req, res, next) => {
             _id: userId,
             name,
             email: email.toLowerCase(),
-            password,
+            password: hashedpassword,
             rootDirId
         }, { session })
         session.commitTransaction()
@@ -40,7 +42,7 @@ export const userRegister = async (req, res, next) => {
     } catch (error) {
 
         session.abortTransaction()
-        
+
         if (error.code == 121) {
             return res.status(400).json({ error: 'Invalid input user already exist' })
         } else if (error.code == 11000) {
@@ -60,14 +62,17 @@ export const userLogin = async (req, res, next) => {
 
     const { email, password } = req.body
 
-    let user = await usrModel.findOne({ email: email.toLowerCase(), password: password }).lean()
-    // let user = await usrModel.find()
-
-    // console.log(user);
+    let user = await usrModel.findOne({ email: email.toLowerCase() }).lean()
 
     if (!user) {
-        return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'you are`t Neha 🤔' })
+        return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
+    let clacluatedHashPassTypeByUser = crypto.createHash('sha256').update(password).digest("base64url")
+
+    if (clacluatedHashPassTypeByUser !== user.password) {
+        return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
+    }
+
 
     let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),
@@ -77,7 +82,6 @@ export const userLogin = async (req, res, next) => {
 
     // let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
     // let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
-
 
     res.cookie('token', cookiePayload
         , {
