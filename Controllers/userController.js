@@ -7,7 +7,7 @@ import crypto from "node:crypto";
 export let secretKey = "mynameisrobin159753"
 
 export const userRegister = async (req, res, next) => {
-    // let db = req.db
+
     const { name, email, password } = req.body
 
     const rootDirId = new Types.ObjectId();
@@ -40,6 +40,7 @@ export const userRegister = async (req, res, next) => {
     } catch (error) {
 
         session.abortTransaction()
+        
         if (error.code == 121) {
             return res.status(400).json({ error: 'Invalid input user already exist' })
         } else if (error.code == 11000) {
@@ -70,18 +71,19 @@ export const userLogin = async (req, res, next) => {
 
     let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),
-        expiryTime: Math.round((Date.now() / 1000) + 10000).toString(16),
+        expiryTime: Math.round((Date.now() / 1000) + 10),
     })
 
 
-    let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
-    let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
+    // let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
+    // let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
 
 
-    res.cookie('token', signedCookiePayload
+    res.cookie('token', cookiePayload
         , {
             secure: 'secure',
             // secure: true,
+            signed: true,
             maxAge: 1000 * 60 * 60,
             httpOnly: true,
             sameSite: "none"

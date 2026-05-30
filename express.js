@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import auth from './middlewares/auth.js';
 import './config/db.js';
 
+export let secretKey = "mynameisrobin159753"
+
 try {
     // let db = await connectDB()
     // console.log(await db.listCollections().toArray()); //for listing all collections in my db
@@ -19,7 +21,7 @@ try {
     // })
 
     app.use(express.json())
-    app.use(cookieParser())
+    app.use(cookieParser(secretKey))
 
     app.use(cors({
         origin: "http://localhost:5173",
