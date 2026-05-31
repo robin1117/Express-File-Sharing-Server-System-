@@ -24,7 +24,7 @@ let usrSchema = new Schema({
     }
 }, {
     strict: "throws",
-    versionKey: false
+    // versionKey: false
 });
 
 let usrModel = model("userDB", usrSchema, "userDB");

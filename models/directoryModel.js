@@ -19,7 +19,7 @@ let directorySchema = new Schema({
     }
 }, {
     strict: "throws",
-    versionKey: false
+
 });
 
 let directoryModel = model("directoryDB", directorySchema, 'directoryDB')

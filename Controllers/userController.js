@@ -13,10 +13,8 @@ export const userRegister = async (req, res, next) => {
     const rootDirId = new Types.ObjectId();
     const userId = new Types.ObjectId();
 
-    // let userThatExist = await usrModel.findOne({ email })
-    console.log(password);
-    let hashedpassword = crypto.createHash('sha256').update(password).digest("base64url")
-    console.log(hashedpassword);
+    let salt = crypto.randomBytes(16)
+    let hashedpassword = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256')
 
     let session = await startSession()
     try {
@@ -33,7 +31,7 @@ export const userRegister = async (req, res, next) => {
             _id: userId,
             name,
             email: email.toLowerCase(),
-            password: hashedpassword,
+            password: `${hashedpassword.toString('base64url')}.${salt.toString('base64url')}`,
             rootDirId
         }, { session })
         session.commitTransaction()
@@ -67,12 +65,13 @@ export const userLogin = async (req, res, next) => {
     if (!user) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
-    let clacluatedHashPassTypeByUser = crypto.createHash('sha256').update(password).digest("base64url")
 
-    if (clacluatedHashPassTypeByUser !== user.password) {
+    let [savedHashedPassword, salt] = user.password.split('.')
+    let clacluatedHashPassTypeByUser = crypto.pbkdf2Sync(password, Buffer.from(salt, 'base64url'), 100000, 32, 'sha256').toString('base64url')
+
+    if (clacluatedHashPassTypeByUser !== savedHashedPassword) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
-
 
     let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),

@@ -5,12 +5,13 @@ import userRoutes from "./routes/userRoutes.js";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import auth from './middlewares/auth.js';
-import './config/db.js';
+// import './config/db.js';
+import { connectDB } from './config/db.js';
 
+await connectDB()
 export let secretKey = "mynameisrobin159753"
 
 try {
-    // let db = await connectDB()
     // console.log(await db.listCollections().toArray()); //for listing all collections in my db
 
     let app = express()
