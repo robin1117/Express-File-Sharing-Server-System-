@@ -3,6 +3,7 @@ import usrModel from "../models/userModel.js"
 import directoryModel from "../models/directoryModel.js"
 import { startSession, Types } from "mongoose"
 import crypto from "node:crypto";
+import bcrypt from 'bcrypt';
 
 export let secretKey = "mynameisrobin159753"
 
@@ -12,9 +13,9 @@ export const userRegister = async (req, res, next) => {
 
     const rootDirId = new Types.ObjectId();
     const userId = new Types.ObjectId();
-
-    let salt = crypto.randomBytes(16)
-    let hashedpassword = crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256')
+    
+    let hashedpassword = await bcrypt.hash(password, 12)
+    console.log(hashedpassword);
 
     let session = await startSession()
     try {
@@ -31,7 +32,7 @@ export const userRegister = async (req, res, next) => {
             _id: userId,
             name,
             email: email.toLowerCase(),
-            password: `${hashedpassword.toString('base64url')}.${salt.toString('base64url')}`,
+            password: `${hashedpassword.toString('base64url')}`,
             rootDirId
         }, { session })
         session.commitTransaction()
@@ -66,16 +67,21 @@ export const userLogin = async (req, res, next) => {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
 
-    let [savedHashedPassword, salt] = user.password.split('.')
-    let clacluatedHashPassTypeByUser = crypto.pbkdf2Sync(password, Buffer.from(salt, 'base64url'), 100000, 32, 'sha256').toString('base64url')
+    let isPassValid = await bcrypt.compare(password, user.password)
 
-    if (clacluatedHashPassTypeByUser !== savedHashedPassword) {
+    console.log(password);
+    console.log(user.password);
+    console.log(isPassValid);
+    // let [savedHashedPassword, salt] = user.password.split('.')
+    // let clacluatedHashPassTypeByUser = crypto.pbkdf2Sync(password, Buffer.from(salt, 'base64url'), 100000, 32, 'sha256').toString('base64url')
+
+    if (!isPassValid) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
 
     let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),
-        expiryTime: Math.round((Date.now() / 1000) + 10),
+        expiryTime: Math.round((Date.now() / 1000) + 100000),
     })
 
 
