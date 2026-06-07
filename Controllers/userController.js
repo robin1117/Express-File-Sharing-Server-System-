@@ -84,6 +84,13 @@ export const userLogin = async (req, res, next) => {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
 
+    let arrayOfSession = await Session.find({ userId: user._id })
+    console.log(arrayOfSession.length);
+
+    if (arrayOfSession.length >= 2) {
+        await arrayOfSession[0].deleteOne()
+    }
+
     let session = await Session.create({ userId: user._id })
 
     // let cookiePayload = JSON.stringify({
