@@ -4,6 +4,7 @@ import directoryModel from "../models/directoryModel.js"
 import { startSession, Types } from "mongoose"
 import crypto from "node:crypto";
 import bcrypt from 'bcrypt';
+import Session from "../models/session.Model.js";
 
 export let secretKey = "mynameisrobin159753"
 
@@ -13,9 +14,8 @@ export const userRegister = async (req, res, next) => {
 
     const rootDirId = new Types.ObjectId();
     const userId = new Types.ObjectId();
-    
-    let hashedpassword = await bcrypt.hash(password, 12)
-    console.log(hashedpassword);
+
+    // let hashedpassword = await bcrypt.hash(password, 12)
 
     let session = await startSession()
     try {
@@ -32,16 +32,18 @@ export const userRegister = async (req, res, next) => {
             _id: userId,
             name,
             email: email.toLowerCase(),
-            password: `${hashedpassword.toString('base64url')}`,
+            password: password,
             rootDirId
         }, { session })
+
+
         session.commitTransaction()
         return res.status(201).json({ message: "New User Generated", status: "success" });
 
     } catch (error) {
 
         session.abortTransaction()
-
+        // console.log(error);
         if (error.code == 121) {
             return res.status(400).json({ error: 'Invalid input user already exist' })
         } else if (error.code == 11000) {
@@ -61,13 +63,15 @@ export const userLogin = async (req, res, next) => {
 
     const { email, password } = req.body
 
-    let user = await usrModel.findOne({ email: email.toLowerCase() }).lean()
+    let user = await usrModel.findOne({ email: email.toLowerCase() })
 
     if (!user) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
 
-    let isPassValid = await bcrypt.compare(password, user.password)
+
+    // let isPassValid = await bcrypt.compare(password, user.password)
+    let isPassValid = await user.comparePass(password)
 
     console.log(password);
     console.log(user.password);
@@ -78,6 +82,8 @@ export const userLogin = async (req, res, next) => {
     if (!isPassValid) {
         return res.status(401).json({ message: "user dosen`t exist, you haven`t register yet", error: 'invalid Credentials' })
     }
+
+    let session = await Session.create({ userId: user._id })
 
     let cookiePayload = JSON.stringify({
         usrId: user._id.toString(),

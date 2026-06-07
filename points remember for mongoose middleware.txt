@@ -1,0 +1,36 @@
+methods are document-level functions.
+In instance methods, this refers to the current document.
+statics are model-level functions.
+In static methods, this refers to the model.
+user.save() saves a document to the database.
+User.create() creates a document and then saves it.
+pre('save') middleware runs before a document is saved.
+In pre('save'), this refers to the current document.
+Async middleware should not use next().
+Callback-style middleware uses next() to continue execution.
+isModified('field') checks whether a field has been changed.
+Passwords should never be stored in plain text.
+bcrypt.hash() converts a password into a secure hash.
+Bcrypt generates a random salt for every hash.
+The same password produces a different hash each time.
+The salt is stored inside the hash itself.
+The original password cannot be recovered from the hash.
+bcrypt.compare() is used to verify a password.
+Password verification should not be done using === between hashes.
+Query middleware works with query objects instead of documents.
+In query middleware, this refers to the query object.
+this.getQuery() returns the query conditions.
+this.getUpdate() returns the update data.
+Middleware should use regular functions (function () {}), not arrow functions.
+Arrow functions do not provide the correct this context in middleware.
+User.findOne() and User.find() are model-level (static) operations.
+user.save() is a document-level (instance) operation.
+Mongoose middleware helps automate repetitive tasks.
+Password hashing is commonly implemented in pre('save') middleware.
+Native MongoDB operations may bypass Mongoose middleware.
+A query object describes what documents to find, update, or delete.
+Authentication flow: Register → Hash Password → Save User → Login → Compare Password.
+Only hashed passwords should be stored in the database.
+The meaning of this depends on the type of method or middleware being used.
+Mongoose separates document logic (methods) from model logic (statics).
+Middleware allows code to run automatically before or after database operations.

@@ -1,4 +1,5 @@
 import { Schema, model, Types } from "mongoose"
+import bcrypt from 'bcrypt';
 
 let usrSchema = new Schema({
     name: {
@@ -26,6 +27,15 @@ let usrSchema = new Schema({
     strict: "throws",
     // versionKey: false
 });
+
+usrSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) return next();
+    this.password = await bcrypt.hash(this.password, 12)
+});
+
+usrSchema.methods.comparePass = async function (userProvidedPass) {
+    return await bcrypt.compare(userProvidedPass, this.password)
+}
 
 let usrModel = model("userDB", usrSchema, "userDB");
 

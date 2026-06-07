@@ -7,8 +7,6 @@ export default async function auth(req, res, next) {
 
     let { token } = req.signedCookies
     try {
-        console.log(JSON.parse(token));
-
         let { usrId, expiryTime } = JSON.parse(token)
         let currentTime = Math.round(Date.now() / 1000)
 
@@ -29,6 +27,7 @@ export default async function auth(req, res, next) {
         next()
 
     } catch (error) {
+        console.log('Problem in auth.js');
         next(error.message)
     }
 }
