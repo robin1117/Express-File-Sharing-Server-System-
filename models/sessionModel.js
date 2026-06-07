@@ -9,7 +9,7 @@ let sessionModel = new Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        expires: 30
+        expires: 3600
     },
 
 }, {

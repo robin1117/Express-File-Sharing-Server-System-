@@ -4,7 +4,8 @@ import directoryModel from "../models/directoryModel.js"
 import { startSession, Types } from "mongoose"
 import crypto from "node:crypto";
 import bcrypt from 'bcrypt';
-import Session from "../models/session.Model.js";
+import Session from "../models/sessionModel.js";
+
 
 export let secretKey = "mynameisrobin159753"
 
@@ -85,16 +86,16 @@ export const userLogin = async (req, res, next) => {
 
     let session = await Session.create({ userId: user._id })
 
-    let cookiePayload = JSON.stringify({
-        usrId: user._id.toString(),
-        expiryTime: Math.round((Date.now() / 1000) + 100000),
-    })
+    // let cookiePayload = JSON.stringify({
+    //     usrId: user._id.toString(),
+    //     expiryTime: Math.round((Date.now() / 1000) + 100000),
+    // })
 
 
     // let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
     // let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
 
-    res.cookie('token', cookiePayload
+    res.cookie('sid', session._id
         , {
             secure: 'secure',
             // secure: true,
@@ -114,7 +115,7 @@ export const userGet = (req, res) => {
 
 export const userLogout = (req, res) => {
     console.log('Attempting logout');
-    res.cookie('token', "", {
+    res.cookie('sid', "", {
         maxAge: 0,
         sameSite: "none",
         secure: 'secure',
