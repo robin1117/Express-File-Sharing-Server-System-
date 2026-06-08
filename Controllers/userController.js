@@ -87,7 +87,7 @@ export const userLogin = async (req, res, next) => {
     let arrayOfSession = await Session.find({ userId: user._id })
     console.log(arrayOfSession.length);
 
-    if (arrayOfSession.length >= 2) {
+    if (arrayOfSession.length >= 3) {
         await arrayOfSession[0].deleteOne()
     }
 
@@ -128,5 +128,14 @@ export const userLogout = (req, res) => {
         secure: 'secure',
     })
     res.status(200).json({ message: 'Loggedout' })
+}
+
+export const logoutAll = async (req, res) => {
+    console.log('Attempting logout All',);
+    let { sid } = req.signedCookies
+    let session = await Session.findById(sid)
+    await Session.deleteMany({ userId: session.userId })
+    res.clearCookie('sid')
+    res.status(200).json({ message: 'Loggedout from All' })
 }
 
