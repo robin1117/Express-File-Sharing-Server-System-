@@ -2,6 +2,7 @@ import express from 'express'
 import directoryRoutes from "./routes/directoryRoute.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import authRouter from "./routes/authRouter.js";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import auth from './middlewares/auth.js';
@@ -41,6 +42,7 @@ try {
     app.use('/directory', auth, directoryRoutes)
     app.use('/file', auth, fileRoutes)
     app.use('/user', userRoutes)
+    app.use('/auth', authRouter)
 
     // app.use((error, req, res, next) => {
     //     res.status(error.status || 500).json({ message: "something went wrong !", error })
