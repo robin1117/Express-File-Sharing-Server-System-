@@ -1,7 +1,6 @@
 import { ObjectId } from "mongodb";
 import usrModel from "../models/userModel.js";
 import crypto from "node:crypto";
-import { secretKey } from "../Controllers/userController.js";
 import Session from "../models/sessionModel.js";
 
 export default async function auth(req, res, next) {

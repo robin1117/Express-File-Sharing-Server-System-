@@ -15,6 +15,10 @@ let usrSchema = new Schema({
         //     "Please enter a valid email"
         // ]
     },
+    profilePic: {
+        type: String,
+        default: null
+    },
 
     password: {
         type: String

@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import OTP from "../models/otpModel.js";
 
-const resend = new Resend("re_Q6KEKoDn_Gveb78JtUkTzZWzQ3krp2E2k");
+const resend = new Resend("re_jVdt3gWF_M5J533HQh6WKTYpb8UMYdkDA");
 
 export async function sendOtp(email) {
 
@@ -31,10 +31,6 @@ export async function sendOtp(email) {
       return { success: false, message: 'You corsses the today`s limit for otp try after 24hr' }
     }
 
-
-
-
-
     const html = `
   <div style="font-family:sans-serif;">
   <h2>Your OTP is: ${otp}</h2>
@@ -43,12 +39,12 @@ export async function sendOtp(email) {
   `;
 
     let result = await resend.emails.send({
-      from: "Storage App <otp@procodrr.dev>",
+      from: "Free Storage Hub<otp@chayaindustries.in>",
       to: email,
       subject: "Storage App OTP",
       html,
     });
-    console.log(result.error.message);
+  
     return { success: true, message: "OTP sent successfully" };
   } catch (error) {
     console.log(error);

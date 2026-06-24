@@ -8,7 +8,6 @@ import cookieParser from "cookie-parser";
 import auth from './middlewares/auth.js';
 // import './config/db.js';
 import { connectDB } from './config/db.js';
-
 await connectDB()
 export let secretKey = "mynameisrobin159753"
 
@@ -26,7 +25,7 @@ try {
     app.use(cookieParser(secretKey))
 
     app.use(cors({
-        origin: "http://localhost:5173",
+        origin: ["http://localhost:5500", "http://localhost:5173"],
         // origin: "http://192.168.1.10:5173",
         // origin: "https://devindrive.netlify.app",
         credentials: true
@@ -44,9 +43,9 @@ try {
     app.use('/user', userRoutes)
     app.use('/auth', authRouter)
 
-    // app.use((error, req, res, next) => {
-    //     res.status(error.status || 500).json({ message: "something went wrong !", error })
-    // })
+    app.use((error, req, res, next) => {
+        res.status(error.status || 500).json({ message: "something went wrong !", error: error.message })
+    })
 
     let ser = app.listen(5000, '0.0.0.0', () => {
         console.log(ser.address())
