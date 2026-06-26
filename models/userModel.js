@@ -1,46 +1,49 @@
-import { Schema, model, Types } from "mongoose"
-import bcrypt from 'bcrypt';
+import mongoose, { Schema, model, Types } from "mongoose";
+import bcrypt from "bcrypt";
 
-let usrSchema = new Schema({
+let usrSchema = new Schema(
+  {
     name: {
-        type: String
+      type: String,
     },
 
     email: {
-        type: String,
-        required: true,
-        unique: true,
-        // match: [
-        //     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        //     "Please enter a valid email"
-        // ]
+      type: String,
+      required: true,
+      unique: true,
+      // match: [
+      //     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      //     "Please enter a valid email"
+      // ]
     },
     profilePic: {
-        type: String,
-        default: null
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
     },
 
     password: {
-        type: String
+      type: String,
     },
 
     rootDirId: {
-        type: Types.ObjectId
-    }
-}, {
+      type: Types.ObjectId,
+    },
+  },
+  {
     strict: "throws",
     // versionKey: false
-});
+  },
+);
 
-usrSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    this.password = await bcrypt.hash(this.password, 12)
+usrSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
 usrSchema.methods.comparePass = async function (userProvidedPass) {
-    return await bcrypt.compare(userProvidedPass, this.password)
-}
+  return await bcrypt.compare(userProvidedPass, this.password);
+};
 
 let usrModel = model("userDB", usrSchema, "userDB");
 
-export default usrModel
+export default usrModel;

@@ -6,7 +6,6 @@ import {
   getGitInfo,
   getGoogleInfo,
 } from "../Services Auth/authCodesService.js";
-
 import { sendOtp } from "../util/sendOtp.js";
 import directoryModel from "../models/directoryModel.js";
 
@@ -17,13 +16,17 @@ export const sendOtpforEmailVerifiy = async (req, res, next) => {
 };
 
 export const VerifiyOtpForEmailVerifiy = async (req, res, next) => {
-  let { otp, email } = req.body;
-  let otpRecord = await OTP.findOne({ email, otp });
-  if (!otpRecord) {
-    return res.json({ success: false, message: "Invalid otp try again" });
+  try {
+    let { otp, email } = req.body;
+    let otpRecord = await OTP.findOne({ email, otp });
+    if (!otpRecord) {
+      return res.json({ success: false, message: "Invalid otp try again" });
+    }
+    await otpRecord.deleteOne();
+    res.json({ success: true, message: "otp verified" });
+  } catch (error) {
+    console.log(error.message);
   }
-  await otpRecord.deleteOne();
-  res.json({ success: true, message: "otp verified" });
 };
 
 export const loginWithAuthCode = async (req, res, next) => {

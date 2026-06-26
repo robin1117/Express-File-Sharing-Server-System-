@@ -1,31 +1,29 @@
-import mongoose, { Schema, model, Types } from "mongoose"
+import mongoose, { Schema, model, Types } from "mongoose";
 
-let otpSchema = new Schema({
+let otpSchema = new Schema(
+  {
     email: {
-        type: String,
-        required: true,
-        unique: true
+      type: String,
+      required: true,
+      unique: true,
     },
     otp: {
-        type: Number,
-        required: true
+      type: String,
+      required: true,
     },
     frequency: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
     },
     createdAt: {
-        type: Date,
-        default: Date.now,
-        expires: 600
+      type: Date,
+      default: Date.now,
+      expires: 60*10,
     },
-
-}, {
-
-});
+  },
+  {},
+);
 
 let OTP = model("OTP", otpSchema, "OTP");
 
-
-
-export default OTP
+export default OTP;

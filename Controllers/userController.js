@@ -15,6 +15,7 @@ export const userRegister = async (req, res, next) => {
   // let hashedpassword = await bcrypt.hash(password, 12)
 
   let session = await startSession();
+
   try {
     session.startTransaction();
     await directoryModel.insertOne(
@@ -46,6 +47,8 @@ export const userRegister = async (req, res, next) => {
   } catch (error) {
     session.abortTransaction();
     // console.log(error);
+    // console.log(error.errInfo.details.schemaRulesNotSatisfied[0].propertiesNotSatisfied[0]);
+    // console.log(error.errInfo.details.schemaRulesNotSatisfied[0].propertiesNotSatisfied[0].details);
     if (error.code == 121) {
       return res
         .status(400)

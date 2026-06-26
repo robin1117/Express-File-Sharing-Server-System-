@@ -5,9 +5,9 @@ import userRoutes from "./routes/userRoutes.js";
 import authRouter from "./routes/authRouter.js";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
-import auth from './middlewares/auth.js';
 // import './config/db.js';
 import { connectDB } from './config/db.js';
+import authMiddlewares from './middlewares/authMiddlewares.js';
 await connectDB()
 export let secretKey = "mynameisrobin159753"
 
@@ -38,8 +38,8 @@ try {
     //     next()
     // })
 
-    app.use('/directory', auth, directoryRoutes)
-    app.use('/file', auth, fileRoutes)
+    app.use('/directory', authMiddlewares, directoryRoutes)
+    app.use('/file', authMiddlewares, fileRoutes)
     app.use('/user', userRoutes)
     app.use('/auth', authRouter)
 
