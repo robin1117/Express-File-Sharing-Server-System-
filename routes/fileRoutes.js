@@ -79,7 +79,6 @@ router.post("/:fileName", (req, res) => {
   });
 
   uploadMiddleware(req, res, async (err) => {
-    let db = req.db;
     if (err) {
       return res.status(400).json({ message: err.message });
     }
@@ -89,7 +88,6 @@ router.post("/:fileName", (req, res) => {
     let extension = path.extname(req.file.originalname);
     console.log(id);
 
-    // await db.collection('fileDB').insertOne({ _id: new ObjectId(id), fileName, extension, parentId: new ObjectId(parentId) })
     let p = await fleModel.insertOne({
       _id: new ObjectId(id),
       fileName,

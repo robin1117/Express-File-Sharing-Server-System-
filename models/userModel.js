@@ -11,14 +11,16 @@ let usrSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      // match: [
-      //     /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-      //     "Please enter a valid email"
-      // ]
+      // match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email"],
     },
     profilePic: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin", "manager"],
+      default: "user",
     },
 
     password: {

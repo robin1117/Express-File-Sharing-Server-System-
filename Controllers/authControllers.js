@@ -38,6 +38,7 @@ export const loginWithAuthCode = async (req, res, next) => {
 
     let user = await usrModel.findOne({ email: email.toLowerCase() });
     if (!user) {
+      console.log(user);
       const rootDirId = new Types.ObjectId();
       const userId = new Types.ObjectId();
       let transistionSession = await startSession();
@@ -83,9 +84,12 @@ export const loginWithAuthCode = async (req, res, next) => {
           .json({ message: "Login Susscess", isLogin: true });
       } catch (error) {
         transistionSession.abortTransaction();
-        next(error);
+
+        // res.json(error.errorResponse);
+        return next(error);
       }
     }
+
     let session = await Session.create({ userId: user._id });
     res.cookie("sid", session._id, {
       secure: "secure",
@@ -149,8 +153,8 @@ export const loginWithAuthCode = async (req, res, next) => {
           .json({ message: "Login Susscess", isLogin: true });
       } catch (error) {
         transistionSession.abortTransaction();
-        console.log(error);
-        // next(error);
+        // return res.json(error.errorResponse);
+        return next(error);
       }
     }
 

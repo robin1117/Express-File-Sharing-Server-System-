@@ -126,6 +126,25 @@ export const userGet = (req, res) => {
   res.status(200).json({ name: req.user.name, email: req.user.email });
 };
 
+export const allUsersGet = async (req, res) => {
+  let allUsers = await usrModel.find();
+  let allSessions = await Session.find().select({ userId: 1, _id: 0 });
+  let setOfUserIdArray = new Set(
+    allSessions.map(({ _id, userId }) => userId.toString()),
+  );
+
+  let modifiedData = allUsers.map(({ _id, name, email, role }) => {
+    return {
+      id:_id,
+      name,
+      email,
+      isLoggedIn: setOfUserIdArray.has(_id.toString()),
+    };
+  });
+
+  res.status(200).json(modifiedData);
+};
+
 export const userLogout = async (req, res) => {
   console.log("Attempting logout");
   let { sid } = req.signedCookies;
