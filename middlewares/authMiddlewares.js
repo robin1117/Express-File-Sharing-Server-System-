@@ -26,3 +26,13 @@ export default async function (req, res, next) {
     next(error.message);
   }
 }
+
+export async function ifUserNotNormal(req, res, next) {
+  if (req.user.role !== "user") return next();
+  return res
+    .status(403)
+    .json({
+      message: "yor are not allowed to access this page",
+      err: "Unauthorize",
+    });
+}

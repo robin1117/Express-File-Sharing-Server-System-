@@ -6,26 +6,38 @@ import { Db, ObjectId } from "mongodb";
 import {
   allUsersGet,
   logoutAll,
+  logoutFromUserId,
   userGet,
   userLogin,
   userLogout,
   userRegister,
 } from "../Controllers/userController.js";
 
-import authMiddlewares from "../middlewares/authMiddlewares.js";
+import authMiddlewares, {
+  ifUserNotNormal,
+} from "../middlewares/authMiddlewares.js";
 
 let router = express.Router();
 
-router.post("user/register", userRegister);
+router.post("/user/register", userRegister);
 
-router.post("user/login", userLogin);
+router.post("/user/login", userLogin);
 
-router.post("user/logout", userLogout);
+router.post("/user/logout", userLogout);
 
-router.post("user/logoutAll", logoutAll);
+router.post("/user/logout", userLogout);
+
+router.post("/user/logoutAll", logoutAll);
+
+router.post(
+  "/users/:userId/logout",
+  authMiddlewares,
+  ifUserNotNormal,
+  logoutFromUserId,
+);
 
 router.get("/user", authMiddlewares, userGet);
 
-router.get("/users", authMiddlewares, allUsersGet);
+router.get("/users", authMiddlewares, ifUserNotNormal, allUsersGet);
 
 export default router;

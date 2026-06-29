@@ -123,7 +123,12 @@ export const userLogin = async (req, res, next) => {
 };
 
 export const userGet = (req, res) => {
-  res.status(200).json({ name: req.user.name, email: req.user.email });
+  res.status(200).json({
+    name: req.user.name,
+    email: req.user.email,
+    role: req.user.role,
+    picture: req.user.profilePic,
+  });
 };
 
 export const allUsersGet = async (req, res) => {
@@ -135,7 +140,7 @@ export const allUsersGet = async (req, res) => {
 
   let modifiedData = allUsers.map(({ _id, name, email, role }) => {
     return {
-      id:_id,
+      id: _id,
       name,
       email,
       isLoggedIn: setOfUserIdArray.has(_id.toString()),
@@ -160,4 +165,21 @@ export const logoutAll = async (req, res) => {
   await Session.deleteMany({ userId: session.userId });
   res.clearCookie("sid");
   res.status(200).json({ message: "Loggedout from All" });
+};
+
+export const logoutFromUserId = async (req, res, next) => {
+  try {
+    if (req.user.role == "manager") {
+      let userWhoIWantLogout = await usrModel.findById(req.params.userId);
+      if (userWhoIWantLogout.role == "admin") {
+        return res.status(200).json({
+          message: `You are not authorize to logout ${userWhoIWantLogout.email}`,
+        });
+      }
+    }
+    await Session.deleteMany({ userId: req.params.userId });
+    res.status(200).json({ message: `user ${req.params.userId} loggedOut` });
+  } catch (error) {
+    next(error);
+  }
 };

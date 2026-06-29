@@ -1,56 +1,59 @@
-import express from 'express'
+import express from "express";
 import directoryRoutes from "./routes/directoryRoute.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRouter from "./routes/authRouter.js";
-import cors from 'cors';
+import cors from "cors";
 import cookieParser from "cookie-parser";
 // import './config/db.js';
-import { connectDB } from './config/db.js';
-import authMiddlewares from './middlewares/authMiddlewares.js';
-await connectDB()
-export let secretKey = "mynameisrobin159753"
+import { connectDB } from "./config/db.js";
+import authMiddlewares from "./middlewares/authMiddlewares.js";
+await connectDB();
+export let secretKey = "mynameisrobin159753";
 
 try {
-    // console.log(await db.listCollections().toArray()); //for listing all collections in my db
+  // console.log(await db.listCollections().toArray()); //for listing all collections in my db
 
-    let app = express()
+  let app = express();
 
-    // app.use((req, res, next) => {
-    //     req.db = db
-    //     next()
-    // })
+  // app.use((req, res, next) => {
+  //     req.db = db
+  //     next()
+  // })
 
-    app.use(express.json())
-    app.use(cookieParser(secretKey))
+  app.use(express.json());
+  app.use(cookieParser(secretKey));
 
-    app.use(cors({
-        origin: ["http://localhost:5500", "http://localhost:5173"],
-        // origin: "http://192.168.1.10:5173",
-        // origin: "https://devindrive.netlify.app",
-        credentials: true
-    }))
+  app.use(
+    cors({
+      origin: ["http://localhost:5500", "http://localhost:5173"],
+      // origin: "http://192.168.1.10:5173",
+      // origin: "https://devindrive.netlify.app",
+      credentials: true,
+    }),
+  );
 
-    // app.use((req, res, next) => {
-    // res.setHeader('Access-Control-Allow-Methods', '*');
-    // res.setHeader('Access-Control-Allow-Headers', '*');
-    // res.setHeader('Access-Control-Allow-Origin', '*')
-    //     next()
-    // })
+  // app.use((req, res, next) => {
+  // res.setHeader('Access-Control-Allow-Methods', '*');
+  // res.setHeader('Access-Control-Allow-Headers', '*');
+  // res.setHeader('Access-Control-Allow-Origin', '*')
+  //     next()
+  // })
 
-    app.use('/directory', authMiddlewares, directoryRoutes)
-    app.use('/file', authMiddlewares, fileRoutes)
-    app.use('/', userRoutes)
-    app.use('/auth', authRouter)
+  app.use("/directory", authMiddlewares, directoryRoutes);
+  app.use("/file", authMiddlewares, fileRoutes);
+  app.use("/", userRoutes);
+  app.use("/auth", authRouter);
 
-    // app.use((error, req, res, next) => {
-    //     res.status(error.status || 500).json({ message: "something went wrong !", error: error.message })
-    // })
+  app.use((error, req, res, next) => {
+    res
+      .status(error.status || 500)
+      .json({ message: "something went wrong !", error: error.message });
+  });
 
-    let ser = app.listen(5000, '0.0.0.0', () => {
-        console.log(ser.address())
-    })
-
+  let ser = app.listen(5000, "0.0.0.0", () => {
+    console.log(ser.address());
+  });
 } catch (error) {
-    console.log(error);
+  console.log(error);
 }
