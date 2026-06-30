@@ -5,6 +5,7 @@ import { Db, ObjectId } from "mongodb";
 // import { client } from '../config/db.js';
 import {
   allUsersGet,
+  deleteUser,
   logoutAll,
   logoutFromUserId,
   userGet,
@@ -39,5 +40,7 @@ router.post(
 router.get("/user", authMiddlewares, userGet);
 
 router.get("/users", authMiddlewares, ifUserNotNormal, allUsersGet);
+
+router.delete("/users/:userId", authMiddlewares, ifUserNotNormal, deleteUser);
 
 export default router;

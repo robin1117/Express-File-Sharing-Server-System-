@@ -47,7 +47,7 @@ try {
     [cmdType]: "fileDB",
     validator: {
       $jsonSchema: {
-        required: ["_id", "fileName", "extension", "parentId"],
+        required: ["_id", "fileName", "userId", "extension", "parentId"],
         properties: {
           _id: {
             bsonType: "objectId",
@@ -57,6 +57,9 @@ try {
           },
           extension: {
             bsonType: "string",
+          },
+          userId: {
+            bsonType: "objectId",
           },
           parentId: {
             bsonType: "objectId",

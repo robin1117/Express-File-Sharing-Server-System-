@@ -86,35 +86,22 @@ router.post("/:fileName", (req, res) => {
     let parentId = req.headers.dirid || req.user.rootDirId;
     let id = path.parse(req.file.filename).name;
     let extension = path.extname(req.file.originalname);
-    console.log(id);
-
-    let p = await fleModel.insertOne({
-      _id: new ObjectId(id),
-      fileName,
-      extension,
-      parentId: new ObjectId(parentId),
-    });
-    console.log(p);
-
     try {
+      let p = await fleModel.insertOne({
+        _id: new ObjectId(id),
+        fileName,
+        extension,
+        userId: req.user._id,
+        parentId: new ObjectId(parentId),
+      });
+      console.log(p);
+
       res.status(201).json({ message: "File uploaded successfully" });
     } catch (error) {
-      return res.status(500).json({ message: "something went wrong" });
+      return res.status(500).json({ message: "something went wrong", error });
     }
   });
 });
-
-function userValidator(req, res, next) {
-  // let fileId = req.params.id
-
-  // let fileData = fileDB.find((fileData) => fileData.id == fileId)
-  // if (!fileData) return res.status(404).json({ message: "File Not Available😏" })
-  // let directoryData = directoryDB.find((directory) => directory.id == fileData.parentId)
-  // if (directoryData.userId !== req.user.id) {
-  //     return res.status(404).json({ message: "You are trying to access someone`s other file😏" })
-  // }
-  next();
-}
 
 //That router.param() check wheather if incomming id is valid of not before before touching DataBase
 router.param("id", validateMiddleware);
@@ -123,7 +110,7 @@ router.param("id", validateMiddleware);
 router
   .route("/:id")
   .patch(updadingFileName)
-  .delete(userValidator, deletingFileName)
-  .get(userValidator, OpenDowanloadFileName);
+  .delete(deletingFileName)
+  .get(OpenDowanloadFileName);
 
 export default router;

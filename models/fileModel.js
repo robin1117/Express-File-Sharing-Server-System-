@@ -1,21 +1,26 @@
-import { Schema, model, Types } from "mongoose"
+import { Schema, model, Types } from "mongoose";
 
-let fileModel = new Schema({
+let fileModel = new Schema(
+  {
     fileName: {
-        type: String
+      type: String,
     },
     extension: {
-        type: String
+      type: String,
     },
     parentId: {
-        type: Types.ObjectId
-    }
-},
-    {
-        strict: "throws",
-        versionKey: false
-    })
+      type: Types.ObjectId,
+    },
+    userId: {
+      type: Types.ObjectId,
+    },
+  },
+  {
+    strict: "throws",
+    versionKey: false,
+  },
+);
 
-let fleModel = model("fileDB", fileModel, 'fileDB')
+let fleModel = model("fileDB", fileModel, "fileDB");
 
-export default fleModel
+export default fleModel;

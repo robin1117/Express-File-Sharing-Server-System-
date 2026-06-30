@@ -5,6 +5,9 @@ import { startSession, Types } from "mongoose";
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import Session from "../models/sessionModel.js";
+import fleModel from "../models/fileModel.js";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 
 export const userRegister = async (req, res, next) => {
   const { name, email, password } = req.body;
@@ -148,6 +151,26 @@ export const allUsersGet = async (req, res) => {
   });
 
   res.status(200).json(modifiedData);
+};
+
+export const deleteUser = async (req, res) => {
+  let userId = req.params.userId;
+
+  let fileArray = await fleModel
+    .find({ userId })
+    .select({ _id: 1, extension: 1 });
+  fileArray.forEach(async ({ _id, extension }) => {
+    let fullName = `${_id}${extension}`;
+    await rm(path.join(import.meta.dirname, "/../storage", fullName), {
+      force: true,
+    });
+  });
+  await Session.deleteMany({ userId });
+  await usrModel.findOneAndDelete({ _id: userId });
+  await directoryModel.deleteMany({ userId });
+  await fleModel.deleteMany({ userId });
+
+  res.status(200).json({ message: `User deleted Parmanentely ${userId}` });
 };
 
 export const userLogout = async (req, res) => {
