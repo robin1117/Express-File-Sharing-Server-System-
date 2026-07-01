@@ -7,7 +7,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 // import './config/db.js';
 import { connectDB } from "./config/db.js";
-import authMiddlewares from "./middlewares/authMiddlewares.js";
+import authMiddlewares, {
+  ifUserDeleted,
+} from "./middlewares/authMiddlewares.js";
 await connectDB();
 export let secretKey = "mynameisrobin159753";
 
@@ -44,8 +46,8 @@ try {
   //     next()
   // })
 
-  app.use("/directory", authMiddlewares, directoryRoutes);
-  app.use("/file", authMiddlewares, fileRoutes);
+  app.use("/directory", authMiddlewares, ifUserDeleted, directoryRoutes);
+  app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
   app.use("/", userRoutes);
   app.use("/auth", authRouter);
 

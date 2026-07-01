@@ -29,10 +29,16 @@ export default async function (req, res, next) {
 
 export async function ifUserNotNormal(req, res, next) {
   if (req.user.role !== "user") return next();
-  return res
-    .status(403)
-    .json({
-      message: "yor are not allowed to access this page",
-      err: "Unauthorize",
-    });
+  return res.status(403).json({
+    message: "yor are not allowed to access this page",
+    err: "Unauthorize",
+  });
+}
+
+export async function ifUserDeleted(req, res, next) {
+  if (!req.user.deleted) return next();
+  return res.status(403).json({
+    message: "Your Account has been deleted please contact admin",
+    err: "Unauthorize",
+  });
 }

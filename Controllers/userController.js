@@ -135,8 +135,9 @@ export const userGet = (req, res) => {
 };
 
 export const allUsersGet = async (req, res) => {
-  let allUsers = await usrModel.find();
+  let allUsers = await usrModel.find({ deleted: false }).lean();
   let allSessions = await Session.find().select({ userId: 1, _id: 0 });
+
   let setOfUserIdArray = new Set(
     allSessions.map(({ _id, userId }) => userId.toString()),
   );
@@ -183,6 +184,7 @@ export const deleteUser = async (req, res) => {
       .status(200)
       .json({ message: `User deleted Parmanentely ${userId}` });
   }
+  await Session.deleteMany({ userId });
   await usrModel.findByIdAndUpdate({ _id: userId }, { deleted: true });
   return res.status(200).json({ message: `User deleted Softly ${userId}` });
 };
