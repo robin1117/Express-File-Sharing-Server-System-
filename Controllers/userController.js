@@ -155,22 +155,36 @@ export const allUsersGet = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   let userId = req.params.userId;
+  let { deleteType } = req.body;
 
-  let fileArray = await fleModel
-    .find({ userId })
-    .select({ _id: 1, extension: 1 });
-  fileArray.forEach(async ({ _id, extension }) => {
-    let fullName = `${_id}${extension}`;
-    await rm(path.join(import.meta.dirname, "/../storage", fullName), {
-      force: true,
+  if (req.user._id == userId) {
+    console.log(userId, deleteType);
+    res.status(403).json({
+      error: "Access Denied",
+      reason: "you can not delete yourself Admin Role",
     });
-  });
-  await Session.deleteMany({ userId });
-  await usrModel.findOneAndDelete({ _id: userId });
-  await directoryModel.deleteMany({ userId });
-  await fleModel.deleteMany({ userId });
+  }
 
-  res.status(200).json({ message: `User deleted Parmanentely ${userId}` });
+  if (deleteType == "hard") {
+    let fileArray = await fleModel
+      .find({ userId })
+      .select({ _id: 1, extension: 1 });
+    fileArray.forEach(async ({ _id, extension }) => {
+      let fullName = `${_id}${extension}`;
+      await rm(path.join(import.meta.dirname, "/../storage", fullName), {
+        force: true,
+      });
+    });
+    await Session.deleteMany({ userId });
+    await usrModel.findOneAndDelete({ _id: userId });
+    await directoryModel.deleteMany({ userId });
+    await fleModel.deleteMany({ userId });
+    return res
+      .status(200)
+      .json({ message: `User deleted Parmanentely ${userId}` });
+  }
+  await usrModel.findByIdAndUpdate({ _id: userId }, { deleted: true });
+  return res.status(200).json({ message: `User deleted Softly ${userId}` });
 };
 
 export const userLogout = async (req, res) => {

@@ -38,6 +38,9 @@ try {
           rootDirId: {
             bsonType: "objectId",
           },
+          deleted: {
+            bsonType: "bool",
+          },
         },
         additionalProperties: true,
       },

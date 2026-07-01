@@ -30,6 +30,11 @@ let usrSchema = new Schema(
     rootDirId: {
       type: Types.ObjectId,
     },
+
+    deleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     strict: "throws",
