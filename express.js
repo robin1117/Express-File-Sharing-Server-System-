@@ -22,6 +22,12 @@ try {
   //     req.db = db
   //     next()
   // })
+  // app.use(
+  //   express.raw({
+  //     type: "application/offset+octet-stream",
+  //     limit: "10mb",
+  //   }),
+  // );
 
   app.use(express.json());
   app.use(cookieParser(secretKey));
@@ -31,6 +37,7 @@ try {
       origin: [
         "http://localhost:5500",
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://127.0.0.1:5500",
       ],
       // origin: "http://192.168.1.10:5173",
@@ -47,7 +54,8 @@ try {
   // })
 
   app.use("/directory", authMiddlewares, ifUserDeleted, directoryRoutes);
-  app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
+  // app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
+  app.use("/file", fileRoutes);
   app.use("/", userRoutes);
   app.use("/auth", authRouter);
 
