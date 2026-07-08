@@ -2,8 +2,6 @@ import express from "express";
 import { createWriteStream, writeFileSync, WriteStream } from "fs";
 import { rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
-import multer from "multer";
-import { Db, ObjectId } from "mongodb";
 import {
   deletingFileName,
   OpenDowanloadFileName,
@@ -14,105 +12,70 @@ import fleModel from "../models/fileModel.js";
 import validateMiddleware from "../middlewares/validateMiddleware.js";
 import { start } from "repl";
 import { pipeline } from "stream";
+import { saveFileMetaToDB } from "../middlewares/uploadingMiddleWares/UploadingMiddlewares.js";
+import { multerUploadMiddleware } from "../middlewares/uploadingMiddleWares/multerMiddleware.js";
 
 let storagePath = path.join(import.meta.dirname, "/../storage");
-
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, storagePath);
-  },
-  filename(req, file, cb) {
-    const id = new ObjectId();
-    const fileName = `${id}${path.extname(file.originalname)}`;
-    req._uploadPath = path.join(storagePath, fileName);
-    req.fileId = id;
-    cb(null, fileName);
-  },
-});
-
-const upload = multer({
-  storage,
-  // preservePath(req, file) {
-  //   console.log(file);
-  // },
-  // limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-  async fileFilter(req, file, cb) {
-    try {
-      // // ✅ 1. Validate user
-      // const uid = req.user._id;
-
-      // let parentDir = await directoryModel.findOne({
-      //   userId: new ObjectId(uid),
-      // });
-
-      // if (!parentDir) {
-      //   return cb(new Error("Your not real"), false);
-      // }
-
-      // ✅ Allow upload
-      cb(null, true);
-    } catch (err) {
-      cb(err, false);
-    }
-  },
-});
-
-const uploadMiddleware = upload.single("file");
 let router = express.Router();
+let isUploadingFlag = false;
 
 //uploadings
-router.post("/upload", async (req, res, next) => {
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    cleaned = true;
-    console.log(req._uploadPath);
-
-    if (req._uploadPath) {
-      unlink(req._uploadPath, () => {
-        console.log("🧹 partial file deleted");
-      });
-    }
-  };
-  req.on("aborted", () => {
-    cleanup();
-  });
-
-  uploadMiddleware(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+router.post(
+  "/upload",
+  saveFileMetaToDB,
+  multerUploadMiddleware,
+  async (req, res, next) => {
     try {
-      if (!req.file) {
-        const uploadLength = req.headers["upload-length"];
-        let file_id = new ObjectId();
-        writeFileSync(path.join(storagePath, file_id.toString()), "");
-        return res.status(200).end(file_id.toString());
+      if (req.file) {
+        let fileId = req.file_id;
+        await fleModel.findByIdAndUpdate(fileId, {
+          $set: { isbroken: false, uploadStatus: "completed" },
+        });
+        return res.status(200).json({
+          message: `file ${req.file.originalname} upload sucessfully`,
+        });
       }
-      res.status(201).end(req.fileId.toString());
-    } catch (error) {
-      return res.status(500).json({ message: "something went wrong", error });
-    }
-  });
-});
 
+      // if filePond prefer chunk based Uploading Go with this Logic
+      let file_id_With_Extension = req.fileNameWith_Id_exe;
+      writeFileSync(
+        path.join(storagePath, file_id_With_Extension.toString()),
+        "",
+      );
+      isUploadingFlag = false;
+      return res.status(200).end(file_id_With_Extension.toString());
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+//For Chunkbased Uploading 
 router.patch(
   "/upload/:fileId",
 
   (req, res, next) => {
+    let file_id = req.params.fileId;
     req.on("aborted", async () => {
-      let file_id = req.params.fileId;
-      if (file_id) {
-        await unlink(path.join(storagePath, file_id));
-      }
+      await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
+        $set: { isbroken: false, uploadStatus: "failed" },
+      });
     });
-    next();
-  },
 
-  express.raw({
-    type: "application/offset+octet-stream",
-    limit: "10mb",
-  }),
+    express.raw({
+      type: "application/offset+octet-stream",
+      limit: "10mb",
+    })(req, res, async (err) => {
+      if (err) {
+        await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
+          $set: { isbroken: false, uploadStatus: "failed" },
+        });
+        console.log("User Might be Refreses The page (Connection Lost)");
+        return;
+      }
+      next();
+    });
+  },
 
   async (req, res, next) => {
     try {
@@ -120,7 +83,6 @@ router.patch(
       const uploadLength = req.headers["upload-length"];
       const uploadName = req.headers["upload-name"];
       const uploadOffset = parseInt(req.headers["upload-offset"], 10);
-      const extension = path.extname(uploadName);
 
       let writeStream = await createWriteStream(
         path.join(storagePath, file_id),
@@ -131,43 +93,50 @@ router.patch(
         },
       );
 
-      let canIWrite = writeStream.write(req.body, (err) => {
+      writeStream.write(req.body, async (err) => {
         if (err) {
           return res.sendStatus(500);
         }
         const currentChunkSize = req.body.length;
+
         const isLastChunk =
           Number(uploadOffset + currentChunkSize) === Number(uploadLength);
+        // console.log(
+        //   uploadOffset + currentChunkSize,
+        //   uploadLength,
+        //   writeStream.bytesWritten,
+        // );
 
-        console.log(
-          uploadOffset + currentChunkSize,
-          uploadLength,
-          writeStream.bytesWritten,
-        );
         if (isLastChunk) {
           return writeStream.close();
         }
-        return res.sendStatus(200);
-      });
-
-      writeStream.on("drain", async (a, b) => {
-        console.log("Drain fire ho rah he yrr");
+        if (!isUploadingFlag) {
+          await fleModel.findByIdAndUpdate(
+            file_id.split(".")[0],
+            {
+              $set: { isbroken: false, uploadStatus: "uploading" },
+            },
+            { returnDocument: "after" },
+          );
+          isUploadingFlag = true;
+        }
+        return res.sendStatus(201);
       });
 
       writeStream.on("finish", async (a, b) => {
-        await rename(
-          path.join(storagePath, file_id),
-          path.join(storagePath, `${file_id}${extension}`),
-        );
         console.log("this is the finish");
+        await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
+          $set: { isbroken: false, uploadStatus: "completed" },
+        });
         return res.sendStatus(200);
       });
     } catch (error) {
-      console.log({ error });
+      next(error);
     }
   },
 );
 
+//To resume uploading
 router.head("/upload/:fileId", async (req, res) => {
   let file_id = req.params.fileId;
   const stats = await stat(path.join(storagePath, file_id));
@@ -180,6 +149,7 @@ router.head("/upload/:fileId", async (req, res) => {
   res.sendStatus(200);
 });
 
+// If user cancel uploading
 router.delete("/upload/revert", express.text(), async (req, res) => {
   let file_id = req.body;
   console.log(file_id);

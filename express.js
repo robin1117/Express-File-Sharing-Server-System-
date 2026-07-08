@@ -54,15 +54,14 @@ try {
   // })
 
   app.use("/directory", authMiddlewares, ifUserDeleted, directoryRoutes);
-  // app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
-  app.use("/file", fileRoutes);
+  app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
   app.use("/", userRoutes);
   app.use("/auth", authRouter);
 
   app.use((error, req, res, next) => {
     res
       .status(error.status || 500)
-      .json({ message: "something went wrong !", error: error.message });
+      .json({ message: "something went wrong !", error: error.message, error });
   });
 
   let ser = app.listen(5000, "0.0.0.0", () => {

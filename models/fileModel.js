@@ -11,8 +11,18 @@ let fileModel = new Schema(
     parentId: {
       type: Types.ObjectId,
     },
+    isbroken: {
+      type: Boolean,
+      default: false,
+    },
     userId: {
       type: Types.ObjectId,
+      default: false,
+    },
+    uploadStatus: {
+      type: String,
+      enum: ["pending", "uploading", "completed", "failed", "deleted"],
+      default: "pending",
     },
   },
   {

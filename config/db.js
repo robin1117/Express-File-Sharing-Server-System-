@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 export async function connectDB(params) {
     try {
         await mongoose.connect('mongodb://dbAdminUser:user1@localhost:27017/storageApp') //shifting to Mongoose
-        console.log("Client Connected");
+        console.log("MongoDb_Client Connected");
     } catch (error) {
         console.log(error.message);
         process.exit(1);
