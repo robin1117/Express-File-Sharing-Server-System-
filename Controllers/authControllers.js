@@ -31,7 +31,6 @@ export const VerifiyOtpForEmailVerifiy = async (req, res, next) => {
 
 export const loginWithAuthCode = async (req, res, next) => {
   let { code, from } = req.body;
-  console.log(req.body);
   if (from === "Git_auth") {
     let userDataFromGit = await getGitInfo(code);
 

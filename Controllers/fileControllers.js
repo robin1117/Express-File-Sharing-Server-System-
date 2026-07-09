@@ -28,6 +28,7 @@ export const updadingFileName = async (req, res, next) => {
     next(error);
   }
 };
+
 export const deletingFileName = async (req, res, next) => {
   try {
     let fileId = req.params.id;
@@ -60,6 +61,7 @@ export const deletingFileName = async (req, res, next) => {
     next(error);
   }
 };
+
 export const OpenDowanloadFileName = async (req, res, next) => {
   let fileId = req.params.id;
   let fileData = await fleModel.findById(fileId);
