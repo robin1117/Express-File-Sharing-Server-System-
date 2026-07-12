@@ -31,9 +31,7 @@ router.post(
         await fleModel.findByIdAndUpdate(fileId, {
           $set: { isbroken: false, uploadStatus: "completed" },
         });
-        return res.status(200).json({
-          message: `file ${req.file.originalname} upload sucessfully`,
-        });
+        return res.status(200).end(req.fileNameWith_Id_exe.toString());
       }
 
       // if filePond prefer chunk based Uploading Go with this Logic
@@ -50,7 +48,7 @@ router.post(
   },
 );
 
-//For Chunkbased Uploading 
+//For Chunkbased Uploading
 router.patch(
   "/upload/:fileId",
 
@@ -160,7 +158,7 @@ router.delete("/upload/revert", express.text(), async (req, res) => {
   res.sendStatus(200);
 });
 
-//That router.param() check wheather if incomming id is valid of not before before touching DataBase
+//That router.param() check wheather if incomming id is valid or not before before touching DataBase
 router.param("id", validateMiddleware);
 
 //This is one the way we can Group our routes while using ExpressJS

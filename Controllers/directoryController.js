@@ -69,9 +69,7 @@ export const renamingDirectory = async (req, res, next) => {
       { _id: new ObjectId(dirid) },
       { $set: { dirName: newName } },
     );
-    return res
-      .status(200)
-      .json({ message: "{what:dir Had updated directory Name}" });
+    return res.status(200).json({ message: "{directory Has been updated}" });
   } catch (error) {
     next(error);
   }

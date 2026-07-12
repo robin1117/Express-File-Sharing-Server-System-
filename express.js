@@ -43,6 +43,7 @@ try {
       // origin: "http://192.168.1.10:5173",
       // origin: "https://devindrive.netlify.app",
       credentials: true,
+      methods: ["GET", "POST", "PATCH", "HEAD", "DELETE", "OPTIONS"],
     }),
   );
 
@@ -58,11 +59,11 @@ try {
   app.use("/", userRoutes);
   app.use("/auth", authRouter);
 
-  app.use((error, req, res, next) => {
-    res
-      .status(error.status || 500)
-      .json({ message: "something went wrong !", error: error.message});
-  });
+  // app.use((error, req, res, next) => {
+  //   res
+  //     .status(error.status || 500)
+  //     .json({ message: "something went wrong !", error: error.message });
+  // });
 
   let ser = app.listen(5000, "0.0.0.0", () => {
     console.log(ser.address());

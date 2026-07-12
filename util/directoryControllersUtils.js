@@ -1,5 +1,6 @@
 import directoryModel from "../models/directoryModel.js";
 import fileModel from "../models/fileModel.js";
+import { ObjectId } from "mongodb";
 
 //This function recursively delete file and filers from directory
 export async function recursiveDeletionDirectory(id, req) {
@@ -58,7 +59,7 @@ export async function findingCrumb(id) {
 
     result.push(dir); // push in correct order
   }
-
   await helper(id);
+  result.shift();
   return result;
 }
