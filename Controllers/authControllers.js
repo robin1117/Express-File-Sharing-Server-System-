@@ -8,6 +8,7 @@ import {
 } from "../Services Auth/authCodesService.js";
 import { sendOtp } from "../util/sendOtp.js";
 import directoryModel from "../models/directoryModel.js";
+import { generateSession } from "../util/LoginSessionHandler.js";
 
 export const sendOtpforEmailVerifiy = async (req, res, next) => {
   let { email } = req.body;
@@ -38,7 +39,6 @@ export const loginWithAuthCode = async (req, res, next) => {
 
     let user = await usrModel.findOne({ email: email.toLowerCase() });
     if (!user) {
-      console.log(user);
       const rootDirId = new Types.ObjectId();
       const userId = new Types.ObjectId();
       let transistionSession = await startSession();
@@ -54,8 +54,7 @@ export const loginWithAuthCode = async (req, res, next) => {
           },
           { session: transistionSession },
         );
-
-        await usrModel.insertOne(
+        let savedUser = await usrModel.insertOne(
           {
             _id: userId,
             name,
@@ -68,9 +67,9 @@ export const loginWithAuthCode = async (req, res, next) => {
         );
         transistionSession.commitTransaction();
 
-        let session = await Session.create({ userId });
+        let sessionId = await generateSession(savedUser);
 
-        res.cookie("sid", session._id, {
+        res.cookie("sid", sessionId, {
           secure: "secure",
           // secure: true,
           signed: true,
@@ -84,14 +83,14 @@ export const loginWithAuthCode = async (req, res, next) => {
           .json({ message: "Login Susscess", isLogin: true });
       } catch (error) {
         transistionSession.abortTransaction();
-
-        // res.json(error.errorResponse);
-        return next(error);
+        next(error);
       }
     }
 
     let session = await Session.create({ userId: user._id });
-    res.cookie("sid", session._id, {
+    let sessionId = await generateSession(user);
+
+    res.cookie("sid", sessionId, {
       secure: "secure",
       // secure: true,
       signed: true,
@@ -123,8 +122,7 @@ export const loginWithAuthCode = async (req, res, next) => {
           },
           { session: transistionSession },
         );
-
-        await usrModel.insertOne(
+        let savedUser = await usrModel.insertOne(
           {
             _id: userId,
             name,
@@ -136,10 +134,10 @@ export const loginWithAuthCode = async (req, res, next) => {
           { session: transistionSession },
         );
         transistionSession.commitTransaction();
+        let sessionId = await generateSession(savedUser);
+        // let session = await Session.create({ userId });
 
-        let session = await Session.create({ userId });
-
-        res.cookie("sid", session._id, {
+        res.cookie("sid", sessionId, {
           secure: "secure",
           // secure: true,
           signed: true,
@@ -158,9 +156,10 @@ export const loginWithAuthCode = async (req, res, next) => {
       }
     }
 
-    let session = await Session.create({ userId: user._id });
+    let sessionId = await generateSession(user);
+    // let session = await Session.create({ userId: user._id });
 
-    res.cookie("sid", session._id, {
+    res.cookie("sid", sessionId, {
       secure: "secure",
       // secure: true,
       signed: true,

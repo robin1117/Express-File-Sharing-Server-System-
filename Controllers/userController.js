@@ -8,6 +8,8 @@ import Session from "../models/sessionModel.js";
 import fleModel from "../models/fileModel.js";
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import redisClient from "../config/redisConfgControl/redis.js";
+import { generateSession } from "../util/LoginSessionHandler.js";
 
 export const userRegister = async (req, res, next) => {
   const { name, email, password } = req.body;
@@ -94,23 +96,9 @@ export const userLogin = async (req, res, next) => {
       });
     }
 
-    let arrayOfSession = await Session.find({ userId: user._id });
+    let sessionId = await generateSession(user);
 
-    if (arrayOfSession.length >= 3) {
-      await arrayOfSession[0].deleteOne();
-    }
-
-    let session = await Session.create({ userId: user._id });
-
-    // let cookiePayload = JSON.stringify({
-    //     usrId: user._id.toString(),
-    //     expiryTime: Math.round((Date.now() / 1000) + 100000),
-    // })
-
-    // let signature = crypto.createHash('sha256').update(secretKey).update(cookiePayload).update(secretKey).digest('base64url') //base64URL
-    // let signedCookiePayload = `${Buffer.from(cookiePayload, 'utf8').toString('base64url')}.${signature}` //base64URL
-
-    res.cookie("sid", session._id, {
+    res.cookie("sid", sessionId, {
       secure: "secure",
       // secure: true,
       signed: true,
@@ -192,17 +180,31 @@ export const deleteUser = async (req, res) => {
 export const userLogout = async (req, res) => {
   console.log("Attempting logout");
   let { sid } = req.signedCookies;
-  await Session.findByIdAndDelete(sid);
   res.clearCookie("sid");
+  await redisClient.del(sid);
+  // await Session.findByIdAndDelete(sid);
   res.status(200).json({ message: "Loggedout" });
 };
 
 export const logoutAll = async (req, res) => {
   console.log("Attempting logout All");
   let { sid } = req.signedCookies;
-  let session = await Session.findById(sid);
-  await Session.deleteMany({ userId: session.userId });
   res.clearCookie("sid");
+  let session = await redisClient.json.get(sid);
+
+  if (!session) {
+    return res.status(200).json({ message: "Your Session Expire" });
+  }
+
+  let allSeesion = await redisClient.ft.search(
+    "session",
+    `@userId:{${session.userId}}`,
+  );
+  let arrayOfSessionId = allSeesion.documents.map(({ id }) => id);
+  if (arrayOfSessionId.length > 0) {
+    await redisClient.unlink(arrayOfSessionId);
+    console.log(`Successfully unlinked ${arrayOfSessionId.length} sessions.`);
+  }
   res.status(200).json({ message: "Loggedout from All" });
 };
 
@@ -222,3 +224,4 @@ export const logoutFromUserId = async (req, res, next) => {
     next(error);
   }
 };
+``

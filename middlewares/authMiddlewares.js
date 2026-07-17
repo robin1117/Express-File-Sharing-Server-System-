@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import usrModel from "../models/userModel.js";
 import crypto from "node:crypto";
 import Session from "../models/sessionModel.js";
+import redisClient from "../config/redisConfgControl/redis.js";
 
 export default async function (req, res, next) {
   try {
@@ -10,7 +11,8 @@ export default async function (req, res, next) {
       return res.status(401).json({ error: "1You Not loggined" });
     }
 
-    let session = await Session.findById(sid);
+    let session = await redisClient.json.get(sid);
+
     if (!session) {
       return res.status(401).json({ error: "2You Not loggined" });
     }
