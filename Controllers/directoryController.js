@@ -8,18 +8,13 @@ import {
   findingCrumb,
   recursiveDeletionDirectory,
 } from "../util/directoryControllersUtils.js";
+import { renameSchema } from "../validators/nameValidator.js";
 
 //creating folder
 export const creatingFolder = async (req, res, next) => {
   try {
-    let rootDirId =
-      req.headers.parentdirid == undefined
-        ? req.user.rootDirId
-        : req.headers.parentdirid;
-
-    let dirName = req.params.dirName || "NewFolder";
-    let db = req.db;
-    // let createdDir = await db.collection('directoryDB').insertOne({ _id: new ObjectId(), dirName, userId: new ObjectId(req.cookies.uid), parentDirId: new ObjectId(rootDirId) })
+    let rootDirId = req.params.id || req.user.rootDirId;
+    let dirName = "NewFolder";
     await directoryModel.insertOne({
       _id: new ObjectId(),
       dirName,
@@ -50,7 +45,6 @@ export const servingDirectory = async (req, res, next) => {
 
     let files = await fileModel.find({ parentId: new ObjectId(id) }).lean();
 
-    // console.log(directories);
     return res.status(200).json({ currentDir, directories, files, breadCrumb });
   } catch (error) {
     next(error);
@@ -59,12 +53,15 @@ export const servingDirectory = async (req, res, next) => {
 
 //renaming Directory
 export const renamingDirectory = async (req, res, next) => {
-  let dirid = req.params.id;
-  let newName = req.body.fileName;
-  console.log(newName);
-  // let db = req.db
   try {
-    // let o = await db.collection('directoryDB').updateOne({ _id: new ObjectId(dirid) }, { $set: { dirName: newName } })
+    let { data, error, success } = renameSchema.safeParse(req.body.fileName);
+    if (!success) {
+      if (!success) {
+        return res.status(401).json(z4.treeifyError(error).properties);
+      }
+    }
+    let newName = data;
+    let dirid = req.params.id;
     await directoryModel.findOneAndUpdate(
       { _id: new ObjectId(dirid) },
       { $set: { dirName: newName } },

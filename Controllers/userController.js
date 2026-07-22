@@ -10,18 +10,19 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import redisClient from "../config/redisConfgControl/redis.js";
 import { generateSession } from "../util/LoginSessionHandler.js";
+import { loginSchema, registerShema } from "../validators/authValidators.js";
+import z4 from "zod/v4";
 
 export const userRegister = async (req, res, next) => {
-  const { name, email, password } = req.body;
-
-  const rootDirId = new Types.ObjectId();
-  const userId = new Types.ObjectId();
-
-  // let hashedpassword = await bcrypt.hash(password, 12)
-
-  let session = await startSession();
-
   try {
+    let { success, data, error } = registerShema.safeParse(req.body);
+    if (!success) {
+      return res.status(401).json(z4.treeifyError(error).properties);
+    }
+    const { name, email, password } = data;
+    const rootDirId = new Types.ObjectId();
+    const userId = new Types.ObjectId();
+    let session = await startSession();
     session.startTransaction();
     await directoryModel.insertOne(
       {
@@ -72,10 +73,17 @@ export const userRegister = async (req, res, next) => {
 };
 
 export const userLogin = async (req, res, next) => {
-  // let db = req.db
-  // console.log(db.namespace);
   try {
-    const { email, password } = req.body;
+    let { success, data, error } = loginSchema.safeParse(req.body);
+
+    if (!success) {
+      return res.status(401).json({
+        message: "invalid Credentials",
+        error: error.issues[0].message,
+      });
+    }
+
+    const { email, password } = data;
 
     let user = await usrModel.findOne({ email: email.toLowerCase() });
 
@@ -224,4 +232,4 @@ export const logoutFromUserId = async (req, res, next) => {
     next(error);
   }
 };
-``
+``;

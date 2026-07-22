@@ -9,16 +9,27 @@ import {
 import { sendOtp } from "../util/sendOtp.js";
 import directoryModel from "../models/directoryModel.js";
 import { generateSession } from "../util/LoginSessionHandler.js";
+import { emailSchema, otpSchema } from "../validators/authValidators.js";
+import z4 from "zod/v4";
 
 export const sendOtpforEmailVerifiy = async (req, res, next) => {
-  let { email } = req.body;
+  let { success, data, error } = emailSchema.safeParse(req.body);
+  if (!success) {
+    return res.status(401).json(z4.treeifyError(error).properties);
+  }
+  let { email } = data;
   let response = await sendOtp(email);
   res.json(response);
 };
 
 export const VerifiyOtpForEmailVerifiy = async (req, res, next) => {
   try {
-    let { otp, email } = req.body;
+    let { success, data, error } = otpSchema.safeParse(req.body);
+
+    if (!success) {
+      return res.status(401).json(z4.treeifyError(error).properties);
+    }
+    let { otp, email } = data;
     let otpRecord = await OTP.findOne({ email, otp });
     if (!otpRecord) {
       return res.json({ success: false, message: "Invalid otp try again" });

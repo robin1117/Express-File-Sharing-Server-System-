@@ -16,7 +16,7 @@ let router = express.Router();
 router.param("id", validateMiddleware);
 
 //creating folder
-router.post(["/", "/:dirName"], creatingFolder);
+router.post(["/", "/:id"], creatingFolder);
 
 //serving Directory
 router.get(["/", "/:id"], servingDirectory);

@@ -4,10 +4,17 @@ import path from "path";
 import usrModel from "../models/userModel.js";
 import fleModel from "../models/fileModel.js";
 import directoryModel from "../models/directoryModel.js";
+import { renameSchema } from "../validators/nameValidator.js";
 
 export const updadingFileName = async (req, res, next) => {
   try {
-    let db = req.db;
+    let { data, error, success } = renameSchema.safeParse(req.body.fileName);
+    if (!success) {
+      if (!success) {
+        return res.status(401).json(z4.treeifyError(error).properties);
+      }
+    }
+
     let fileId = req.params.id;
     let fileData = await fleModel.findOne({ _id: new ObjectId(fileId) });
     let directoryData = await directoryModel.findOne({
@@ -20,7 +27,7 @@ export const updadingFileName = async (req, res, next) => {
     }
     await fleModel.updateOne(
       { _id: new ObjectId(fileId) },
-      { $set: { fileName: req.body.fileName } },
+      { $set: { fileName: data } },
     );
     return res.status(200).json({ message: "Renamed" });
   } catch (error) {
@@ -44,18 +51,12 @@ export const deletingFileName = async (req, res, next) => {
     }
 
     let fullName = `${fileId}${fileData.extension}`;
-    // let fileDataIndex = fileDB.findIndex((fileData) => fileData.id == fileId)
     await rm(path.join(import.meta.dirname, "/../storage", fullName), {
       force: true,
     });
-    // fileDB.splice(fileDataIndex, 1)
-    // let p = await db.collection('fileDB').deleteOne({ _id: new ObjectId(fileId) })
+
     await fleModel.deleteOne({ _id: new ObjectId(fileId) });
 
-    // let selectedDirWithReference = directoryDB.find((dir) => dir.id == fileData.parentId)
-    // selectedDirWithReference.files = selectedDirWithReference.files.filter((id) => id != fileId)
-    // await writeFile('./directoryDB.json', JSON.stringify(directoryDB))
-    // await writeFile('./fileDB.json', JSON.stringify(fileDB))
     res.status(200).json({ message: "File deleted successfully" });
   } catch (error) {
     next(error);
@@ -85,9 +86,7 @@ export const OpenDowanloadFileName = async (req, res, next) => {
       path.join(import.meta.dirname, "/../storage", fullName),
       fileData.fileName,
     );
-    // res.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
   }
-
   res.sendFile(
     path.join(import.meta.dirname, "/../storage", fullName),
     (err) => {

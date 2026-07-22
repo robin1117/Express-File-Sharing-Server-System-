@@ -5,54 +5,22 @@ import userRoutes from "./routes/userRoutes.js";
 import authRouter from "./routes/authRouter.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-// import './config/db.js';
 import { connectDB } from "./config/db.js";
 import authMiddlewares, {
   ifUserDeleted,
 } from "./middlewares/authMiddlewares.js";
 await connectDB();
-export let secretKey = "mynameisrobin159753";
 
 try {
-  // console.log(await db.listCollections().toArray()); //for listing all collections in my db
-
   let app = express();
-
-  // app.use((req, res, next) => {
-  //     req.db = db
-  //     next()
-  // })
-  // app.use(
-  //   express.raw({
-  //     type: "application/offset+octet-stream",
-  //     limit: "10mb",
-  //   }),
-  // );
-
-  app.use(express.json());
-  app.use(cookieParser(secretKey));
-
   app.use(
     cors({
-      origin: [
-        "http://localhost:5500",
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5500",
-      ],
-      // origin: "http://192.168.1.10:5173",
-      // origin: "https://devindrive.netlify.app",
+      origin: "http://localhost:5500",
       credentials: true,
-      methods: ["GET", "POST", "PATCH", "HEAD", "DELETE", "OPTIONS"],
     }),
   );
-
-  // app.use((req, res, next) => {
-  // res.setHeader('Access-Control-Allow-Methods', '*');
-  // res.setHeader('Access-Control-Allow-Headers', '*');
-  // res.setHeader('Access-Control-Allow-Origin', '*')
-  //     next()
-  // })
+  app.use(express.json());
+  app.use(cookieParser(process.env.SECRET_KEY_COOKI_PARSER));
 
   app.use("/directory", authMiddlewares, ifUserDeleted, directoryRoutes);
   app.use("/file", authMiddlewares, ifUserDeleted, fileRoutes);
@@ -65,7 +33,7 @@ try {
   //     .json({ message: "something went wrong !", error: error.message });
   // });
 
-  let ser = app.listen(5000, "0.0.0.0", () => {
+  let ser = app.listen(process.env.PORT || 5000, "0.0.0.0", () => {
     console.log(ser.address());
   });
 } catch (error) {
