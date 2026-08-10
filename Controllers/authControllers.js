@@ -48,7 +48,7 @@ export const loginWithAuthCode = async (req, res, next) => {
 
     let { email, name, id: sub, avatar_url: picture } = userDataFromGit;
 
-    let user = await usrModel.findOne({ email: email.toLowerCase() });
+    let user = await usrModel.findOne({ email: email?.toLowerCase() });
     if (!user) {
       const rootDirId = new Types.ObjectId();
       const userId = new Types.ObjectId();
@@ -98,7 +98,7 @@ export const loginWithAuthCode = async (req, res, next) => {
       }
     }
 
-    let session = await Session.create({ userId: user._id });
+    // let session = await Session.create({ userId: user._id });
     let sessionId = await generateSession(user);
 
     res.cookie("sid", sessionId, {
