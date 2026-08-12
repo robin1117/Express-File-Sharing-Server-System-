@@ -8,6 +8,9 @@ let fileModel = new Schema(
     extension: {
       type: String,
     },
+    uploadId: {
+      type: String,
+    },
     parentId: {
       type: Types.ObjectId,
     },

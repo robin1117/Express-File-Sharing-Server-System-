@@ -2,10 +2,16 @@ import express from "express";
 import path from "node:path";
 import { ObjectId } from "mongodb";
 import fleModel from "../../models/fileModel.js";
-import { createWriteStream, writeFileSync } from "node:fs";
+import s3Client from "../../config/s3Config.js";
+import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+} from "@aws-sdk/client-s3";
+let uploadParts = new Map();
+let uploadOffsets = new Map();
 
-let storagePath = path.join(import.meta.dirname, "/../../storage");
-let isUploadingFlag = false;
 export const saveFileMetaToDB = async (req, res, next) => {
   try {
     const content_length = req.headers["content-length"];
@@ -20,8 +26,16 @@ export const saveFileMetaToDB = async (req, res, next) => {
     let extension = path.extname(Original_file_Name);
     let fileName = path.parse(Original_file_Name).name;
 
+    const createCommand = new CreateMultipartUploadCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: file_id.toString(),
+    });
+    const s3Response = await s3Client.send(createCommand);
+    const uploadId = s3Response.UploadId;
+
     await fleModel.insertOne({
       _id: file_id,
+      uploadId,
       extension,
       fileName: decodeURIComponent(fileName),
       userId: req.user._id,
@@ -32,6 +46,7 @@ export const saveFileMetaToDB = async (req, res, next) => {
 
     req.fileNameWith_Id_exe = `${file_id}${extension}`;
     req.file_id = file_id;
+    req.s3_UploadId = uploadId;
     next();
   } catch (error) {
     next(error);
@@ -49,13 +64,7 @@ export const decidingTheUploadApproach = async (req, res, next) => {
     }
 
     // if filePond prefer chunk based Uploading Go with this Logic
-    let file_id_With_Extension = req.fileNameWith_Id_exe;
-    writeFileSync(
-      path.join(storagePath, file_id_With_Extension.toString()),
-      "",
-    );
-    isUploadingFlag = false;
-    return res.status(200).end(file_id_With_Extension.toString());
+    return res.status(200).end(req.file_id.toString());
   } catch (error) {
     next(error);
   }
@@ -68,8 +77,8 @@ export const isReqAborted_ifNot_AddChunkDataToReqBody = async (
 ) => {
   let file_id = req.params.fileId;
   req.on("aborted", async () => {
-    await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
-      $set: { isbroken: false, uploadStatus: "failed" },
+    await fleModel.findByIdAndUpdate(file_id, {
+      $set: { isbroken: true, uploadStatus: "failed" },
     });
   });
 
@@ -78,8 +87,8 @@ export const isReqAborted_ifNot_AddChunkDataToReqBody = async (
     limit: "10mb",
   })(req, res, async (err) => {
     if (err) {
-      await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
-        $set: { isbroken: false, uploadStatus: "failed" },
+      await fleModel.findByIdAndUpdate(file_id, {
+        $set: { isbroken: true, uploadStatus: "failed" },
       });
       console.log("User Might be Refreses The page (Connection Lost)");
       return;
@@ -91,53 +100,68 @@ export const isReqAborted_ifNot_AddChunkDataToReqBody = async (
 export const chunkBasedUploading = async (req, res, next) => {
   try {
     let file_id = req.params.fileId;
-    const uploadLength = req.headers["upload-length"];
-    const uploadName = req.headers["upload-name"];
+    const fileMeta = await fleModel.findById(file_id);
+
+    if (!fileMeta?.uploadId) {
+      return res.status(404).send("Upload metadata not found");
+    }
+
+    const uploadLength = parseInt(req.headers["upload-length"], 10);
     const uploadOffset = parseInt(req.headers["upload-offset"], 10);
+    const currentChunkSize = req.body.length;
 
-    let writeStream = await createWriteStream(path.join(storagePath, file_id), {
-      flags: "r+",
-      start: uploadOffset,
-      highWaterMark: 1024 * 1024 * 11,
+    const isLastChunk =
+      Number(uploadOffset + currentChunkSize) === Number(uploadLength);
+
+    const parts = uploadParts.get(file_id) ?? [];
+    const calculatedPartNumber = parts.length + 1;
+
+    const uploadPartCommand = new UploadPartCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: file_id,
+      UploadId: fileMeta.uploadId,
+      PartNumber: calculatedPartNumber,
+      Body: req.body,
     });
 
-    writeStream.write(req.body, async (err) => {
-      if (err) {
-        return res.sendStatus(500);
-      }
-      const currentChunkSize = req.body.length;
-
-      const isLastChunk =
-        Number(uploadOffset + currentChunkSize) === Number(uploadLength);
-      // console.log(
-      //   uploadOffset + currentChunkSize,
-      //   uploadLength,
-      //   writeStream.bytesWritten,
-      // );
-
-      if (isLastChunk) {
-        return writeStream.close();
-      }
-      if (!isUploadingFlag) {
-        await fleModel.findByIdAndUpdate(
-          file_id.split(".")[0],
-          {
-            $set: { isbroken: false, uploadStatus: "uploading" },
-          },
-          { returnDocument: "after" },
-        );
-        isUploadingFlag = true;
-      }
-      return res.sendStatus(201);
+    const s3Response = await s3Client.send(uploadPartCommand);
+    parts.push({
+      PartNumber: calculatedPartNumber,
+      ETag: s3Response.ETag,
     });
 
-    writeStream.on("finish", async (a, b) => {
-      console.log("this is the finish");
-      await fleModel.findByIdAndUpdate(file_id.split(".")[0], {
+    uploadParts.set(file_id, parts);
+    uploadOffsets.set(file_id, uploadOffset + currentChunkSize);
+
+    await fleModel.findByIdAndUpdate(file_id, {
+      $set: { isbroken: false, uploadStatus: "uploading" },
+    });
+
+    if (isLastChunk) {
+      const completeCommand = new CompleteMultipartUploadCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: file_id,
+        UploadId: fileMeta.uploadId,
+        MultipartUpload: {
+          Parts: parts.sort((a, b) => a.PartNumber - b.PartNumber),
+        },
+      });
+
+      await s3Client.send(completeCommand);
+      await fleModel.findByIdAndUpdate(file_id, {
         $set: { isbroken: false, uploadStatus: "completed" },
       });
+      uploadParts.delete(file_id);
+      uploadOffsets.delete(file_id);
+      
       return res.sendStatus(200);
+    }
+
+    res.set({
+      "Upload-Offset": (uploadOffset + currentChunkSize).toString(),
+      "Access-Control-Expose-Headers": "Upload-Offset",
     });
+    return res.sendStatus(201);
   } catch (error) {
     next(error);
   }
@@ -145,20 +169,38 @@ export const chunkBasedUploading = async (req, res, next) => {
 
 export const resumeUploading = async (req, res) => {
   let file_id = req.params.fileId;
-  const stats = await stat(path.join(storagePath, file_id));
-  console.log(stats.size, file_id);
+  const offset = uploadOffsets.get(file_id) ?? 0;
+  console.log(offset, file_id);
   res.set({
-    "Upload-Offset": stats.size.toString(),
+    "Upload-Offset": offset.toString(),
     "Access-Control-Expose-Headers": "Upload-Offset", // Required if frontend wants to reads this cross-origin
   });
 
   res.sendStatus(200);
 };
 
-export const onCancelUpload = async (req, res) => {
-  let file_id = req.body;
-  if (file_id) {
-    await unlink(path.join(storagePath, file_id));
+export const onCancelUpload = async (req, res, next) => {
+  try {
+    let file_id = req.body;
+    const fileMeta = await fleModel.findById(file_id);
+
+    if (fileMeta?.uploadId) {
+      const abortCommand = new AbortMultipartUploadCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: file_id,
+        UploadId: fileMeta.uploadId,
+      });
+
+      await s3Client.send(abortCommand);
+      await fleModel.findByIdAndUpdate(file_id, {
+        $set: { isbroken: true, uploadStatus: "failed" },
+      });
+    }
+
+    uploadParts.delete(file_id);
+    uploadOffsets.delete(file_id);
+    res.sendStatus(200);
+  } catch (error) {
+    next(error);
   }
-  res.sendStatus(200);
 };

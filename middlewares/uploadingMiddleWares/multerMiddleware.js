@@ -1,16 +1,18 @@
 import multer from "multer";
-import path from "path";
+import multerS3 from "multer-s3";
 import { ObjectId } from "mongodb";
 import directoryModel from "../../models/directoryModel.js";
+import s3Client from "../../config/s3Config.js";
 
-let storagePath = path.join(import.meta.dirname, "/../../storage");
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    console.log("creating storage");
-    cb(null, storagePath);
+const storage = multerS3({
+  s3: s3Client,
+  bucket: process.env.AWS_BUCKET_NAME,
+  metadata(req, file, cb) {
+    console.log("creating storage metadata");
+    cb(null, { fieldName: file.fieldname });
   },
-  filename(req, file, cb) {
+  key(req, file, cb) {
     console.log("Extracting naming file");
     const fileName = req.fileNameWith_Id_exe;
     cb(null, fileName);

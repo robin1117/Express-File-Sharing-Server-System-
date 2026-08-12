@@ -5,6 +5,9 @@ import usrModel from "../models/userModel.js";
 import fleModel from "../models/fileModel.js";
 import directoryModel from "../models/directoryModel.js";
 import { renameSchema } from "../validators/nameValidator.js";
+import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import s3Client from "../config/s3Config.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const updadingFileName = async (req, res, next) => {
   try {
@@ -51,10 +54,13 @@ export const deletingFileName = async (req, res, next) => {
     }
 
     let fullName = `${fileId}${fileData.extension}`;
-    await rm(path.join(import.meta.dirname, "/../storage", fullName), {
-      force: true,
+
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: fileData._id.toString(),
     });
 
+    await s3Client.send(deleteCommand);
     await fleModel.deleteOne({ _id: new ObjectId(fileId) });
 
     res.status(200).json({ message: "File deleted successfully" });
@@ -79,20 +85,32 @@ export const OpenDowanloadFileName = async (req, res, next) => {
     return res.status(404).json({ message: "file Not found" });
   }
 
+  let contentType = "application/octet-stream";
+  if (fileData.extension === ".mp4") {
+    contentType = "video/mp4";
+  } else if (fileData.extension === ".png") {
+    contentType = "image/png";
+  } else if (fileData.extension === ".jpg" || fileData.extension === ".jpeg") {
+    contentType = "image/jpeg";
+  } else if (fileData.extension === ".pdf") {
+    contentType = "application/pdf";
+  }
+  let isDownload = req.query?.action == "download";
+
+  const getCommand = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: fileId,
+    ResponseContentType: contentType,
+    ...(isDownload && {
+      ResponseContentDisposition: `attachment; filename="${fileData.fileName}${fileData.extension}"`,
+    }),
+  });
+
+  const signedUrl = await getSignedUrl(s3Client, getCommand, {
+    expiresIn: 300,
+  });
+
   let fullName = `${fileId}${fileData.extension}`;
 
-  if (req.query.action == "download") {
-    res.download(
-      path.join(import.meta.dirname, "/../storage", fullName),
-      fileData.fileName,
-    );
-  }
-  res.sendFile(
-    path.join(import.meta.dirname, "/../storage", fullName),
-    (err) => {
-      if (err && !res.headersSent) {
-        res.status(404).send("File not found !");
-      }
-    },
-  );
+  res.redirect(signedUrl);
 };

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1106.0",
+    "@aws-sdk/s3-request-presigner": "^3.1108.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -20,6 +21,7 @@
     "mongodb": "^7.5.0",
     "mongoose": "^9.6.2",
     "multer": "^2.0.2",
+    "multer-s3": "^3.0.1",
     "ngrok": "^5.0.0-beta.2",
     "redis": "^6.1.0",
     "resend": "^6.12.4",

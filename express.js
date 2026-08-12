@@ -13,12 +13,14 @@ await connectDB();
 
 try {
   let app = express();
+  
   app.use(
     cors({
       origin: "http://localhost:5500",
       credentials: true,
     }),
   );
+
   app.use(express.json());
   app.use(cookieParser(process.env.SECRET_KEY_COOKI_PARSER));
 

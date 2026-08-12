@@ -21,9 +21,10 @@ import {
   saveFileMetaToDB,
 } from "../middlewares/uploadingMiddleWares/UploadingMiddlewares.js";
 import { multerUploadMiddleware } from "../middlewares/uploadingMiddleWares/multerMiddleware.js";
+import s3Client from "../config/s3Config.js";
+import { CreateMultipartUploadCommand } from "@aws-sdk/client-s3";
 let storagePath = path.join(import.meta.dirname, "/../storage");
 let router = express.Router();
-
 
 //uploadings
 router.post(
