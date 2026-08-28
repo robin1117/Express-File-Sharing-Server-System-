@@ -12,6 +12,8 @@ import redisClient from "../config/redisConfgControl/redis.js";
 import { generateSession } from "../util/LoginSessionHandler.js";
 import { loginSchema, registerShema } from "../validators/authValidators.js";
 import z4 from "zod/v4";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import s3Client from "../config/s3Config.js";
 
 export const userRegister = async (req, res, next) => {
   try {
@@ -132,11 +134,20 @@ export const userGet = (req, res) => {
 
 export const allUsersGet = async (req, res) => {
   let allUsers = await usrModel.find({ deleted: false }).lean();
-  let allSessions = await Session.find().select({ userId: 1, _id: 0 });
+  let sessionkeys = [];
 
-  let setOfUserIdArray = new Set(
-    allSessions.map(({ _id, userId }) => userId.toString()),
+  for await (const key of redisClient.scanIterator({ MATCH: "session:*" })) {
+    sessionkeys.push(...key);
+  }
+
+  const userIdArray = await Promise.all(
+    sessionkeys.map(async (key) => {
+      const user = await redisClient.json.get(key);
+      return user.userId;
+    }),
   );
+
+  let setOfUserIdArray = new Set(userIdArray.map((userId) => userId));
 
   let modifiedData = allUsers.map(({ _id, name, email, role }) => {
     return {
@@ -166,16 +177,25 @@ export const deleteUser = async (req, res) => {
     let fileArray = await fleModel
       .find({ userId })
       .select({ _id: 1, extension: 1 });
+
     fileArray.forEach(async ({ _id, extension }) => {
-      let fullName = `${_id}${extension}`;
-      await rm(path.join(import.meta.dirname, "/../storage", fullName), {
-        force: true,
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: _id.toString(),
       });
+      await s3Client.send(deleteCommand);
     });
-    await Session.deleteMany({ userId });
+
+    let result = await redisClient.ft.search("session", `@userId:{${userId}}`);
+
+    const sessionIds = result.documents.map((doc) => doc.id);
+    await redisClient.del(sessionIds);
+
+    // await Session.deleteMany({ userId });
     await usrModel.findOneAndDelete({ _id: userId });
     await directoryModel.deleteMany({ userId });
     await fleModel.deleteMany({ userId });
+
     return res
       .status(200)
       .json({ message: `User deleted Parmanentely ${userId}` });
@@ -190,7 +210,6 @@ export const userLogout = async (req, res) => {
   let { sid } = req.signedCookies;
   res.clearCookie("sid");
   await redisClient.del(sid);
-  // await Session.findByIdAndDelete(sid);
   res.status(200).json({ message: "Loggedout" });
 };
 
@@ -226,10 +245,15 @@ export const logoutFromUserId = async (req, res, next) => {
         });
       }
     }
-    await Session.deleteMany({ userId: req.params.userId });
+    let result = await redisClient.ft.search(
+      "session",
+      `@userId:{${req.params.userId}}`,
+    );
+
+    const sessionIds = result.documents.map((doc) => doc.id);
+    let o = await redisClient.del(sessionIds);
     res.status(200).json({ message: `user ${req.params.userId} loggedOut` });
   } catch (error) {
     next(error);
   }
 };
-``;

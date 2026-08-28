@@ -30,6 +30,7 @@ export const saveFileMetaToDB = async (req, res, next) => {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: file_id.toString(),
     });
+
     const s3Response = await s3Client.send(createCommand);
     const uploadId = s3Response.UploadId;
 
@@ -123,13 +124,13 @@ export const chunkBasedUploading = async (req, res, next) => {
       PartNumber: calculatedPartNumber,
       Body: req.body,
     });
-
     const s3Response = await s3Client.send(uploadPartCommand);
+
     parts.push({
       PartNumber: calculatedPartNumber,
       ETag: s3Response.ETag,
     });
-
+    console.log(uploadParts.get(file_id));
     uploadParts.set(file_id, parts);
     uploadOffsets.set(file_id, uploadOffset + currentChunkSize);
 
@@ -148,12 +149,13 @@ export const chunkBasedUploading = async (req, res, next) => {
       });
 
       await s3Client.send(completeCommand);
+
       await fleModel.findByIdAndUpdate(file_id, {
         $set: { isbroken: false, uploadStatus: "completed" },
       });
+
       uploadParts.delete(file_id);
       uploadOffsets.delete(file_id);
-      
       return res.sendStatus(200);
     }
 

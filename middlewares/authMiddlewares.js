@@ -6,6 +6,9 @@ import redisClient from "../config/redisConfgControl/redis.js";
 
 export default async function (req, res, next) {
   try {
+    if (req.method == "HEAD") {
+      return next();
+    }
     let { sid } = req.signedCookies;
     if (!sid) {
       return res.status(401).json({ error: "1You Not loggined" });
@@ -38,6 +41,9 @@ export async function ifUserNotNormal(req, res, next) {
 }
 
 export async function ifUserDeleted(req, res, next) {
+  if (req.method == "HEAD") {
+    return next();
+  }
   if (!req.user.deleted) return next();
   return res.status(403).json({
     message: "Your Account has been deleted please contact admin",

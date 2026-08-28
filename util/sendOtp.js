@@ -39,12 +39,12 @@ export async function sendOtp(email) {
   </div>
   `;
 
-    // let result = await resend.emails.send({
-    //   from: "Free Storage Hub<otp@chayaindustries.in>",
-    //   to: email,
-    //   subject: "Storage App OTP",
-    //   html,
-    // });
+    let result = await resend.emails.send({
+      from: "Free Storage Hub<otp@chayaindustries.in>",
+      to: email,
+      subject: "Storage App OTP",
+      html,
+    });
 
     return { success: true, message: "OTP sent successfully" };
   } catch (error) {

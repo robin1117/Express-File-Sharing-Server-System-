@@ -30,12 +30,7 @@ router.post("/user/logout", userLogout);
 
 router.post("/user/logoutAll", logoutAll);
 
-router.post(
-  "/users/:userId/logout",
-  authMiddlewares,
-  ifUserNotNormal,
-  logoutFromUserId,
-);
+router.post("/users/:userId/logout",authMiddlewares,ifUserNotNormal,logoutFromUserId,);
 
 router.get("/user", authMiddlewares, userGet);
 
