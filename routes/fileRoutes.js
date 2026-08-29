@@ -1,17 +1,10 @@
 import express from "express";
-import { createWriteStream, writeFileSync, WriteStream } from "fs";
-import { rename, rm, stat, unlink, writeFile } from "fs/promises";
-import path from "path";
 import {
   deletingFileName,
   OpenDowanloadFileName,
   updadingFileName,
 } from "../Controllers/fileControllers.js";
-import directoryModel from "../models/directoryModel.js";
-import fleModel from "../models/fileModel.js";
 import validateMiddleware from "../middlewares/validateMiddleware.js";
-import { start } from "repl";
-import { pipeline } from "stream";
 import {
   chunkBasedUploading,
   decidingTheUploadApproach,
@@ -21,9 +14,6 @@ import {
   saveFileMetaToDB,
 } from "../middlewares/uploadingMiddleWares/UploadingMiddlewares.js";
 import { multerUploadMiddleware } from "../middlewares/uploadingMiddleWares/multerMiddleware.js";
-import s3Client from "../config/s3Config.js";
-import { CreateMultipartUploadCommand } from "@aws-sdk/client-s3";
-let storagePath = path.join(import.meta.dirname, "/../storage");
 let router = express.Router();
 
 //uploadings
@@ -45,7 +35,7 @@ router.patch(
 router.head("/upload/:fileId", resumeUploading);
 
 // If user cancel uploading
-router.delete("/upload/revert", express.text(), onCancelUpload);
+router.delete("/upload/revert", express.text(), onCancelUpload); // This is in under process right now🔥
 
 //That router.param() check wheather if incomming id is valid or not before before touching DataBase
 router.param("id", validateMiddleware);

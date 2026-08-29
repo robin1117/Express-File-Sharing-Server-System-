@@ -16,16 +16,17 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import s3Client from "../config/s3Config.js";
 
 export const userRegister = async (req, res, next) => {
+  let { success, data, error } = registerShema.safeParse(req.body);
+  if (!success) {
+    return res.status(401).json(z4.treeifyError(error).properties);
+  }
+  const { name, email, password } = data;
+  const rootDirId = new Types.ObjectId();
+  const userId = new Types.ObjectId();
+
+  let transistionSession = await startSession();
   try {
-    let { success, data, error } = registerShema.safeParse(req.body);
-    if (!success) {
-      return res.status(401).json(z4.treeifyError(error).properties);
-    }
-    const { name, email, password } = data;
-    const rootDirId = new Types.ObjectId();
-    const userId = new Types.ObjectId();
-    let session = await startSession();
-    session.startTransaction();
+    transistionSession.startTransaction();
     await directoryModel.insertOne(
       {
         _id: rootDirId,
@@ -34,7 +35,7 @@ export const userRegister = async (req, res, next) => {
         userId: userId,
         parentDirId: null,
       },
-      { session },
+      { session: transistionSession },
     );
 
     await usrModel.insertOne(
@@ -45,18 +46,15 @@ export const userRegister = async (req, res, next) => {
         password: password,
         rootDirId,
       },
-      { session },
+      { session: transistionSession },
     );
 
-    session.commitTransaction();
+    transistionSession.commitTransaction();
     return res
       .status(201)
       .json({ message: "New User Generated", status: "success" });
   } catch (error) {
-    session.abortTransaction();
-    // console.log(error);
-    // console.log(error.errInfo.details.schemaRulesNotSatisfied[0].propertiesNotSatisfied[0]);
-    // console.log(error.errInfo.details.schemaRulesNotSatisfied[0].propertiesNotSatisfied[0].details);
+    transistionSession.abortTransaction();
     if (error.code == 121) {
       return res
         .status(400)

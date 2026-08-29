@@ -6,12 +6,12 @@ This is Loader a fileManagement system where users can Register, Login, Create F
 
 ## 🛠️ Tech Stack
 
-- **Runtime & Framework:** Node.js, Express.js
-- **Database:** MongoDB / Mongoose
-- **Caching & Session:** Redis
-- **Cloud Storage:** AWS S3
-- **Authentication:** JWT / OAuth 2.0 / cookie-parser
-- **Validation:** Zod 
+- **Runtime & Framework:** Node.js, Express.js(its a NodeJS framework to simplifiy the process of builiding backend logic and APIs)
+- **Database:** MongoDB(A NoSql DB which store data JSON-like documents,easy scaling) / Mongoose(ODM) it provides a schema based solution to model application data and manage relation ship
+- **Caching & Session:** Redis : to reduces latency for Read and Update Operations
+- **Cloud Storage:** AWS S3 : `Pre-signed` URLs allow you to grant temporary user object witnout making the S3 bucket public
+- **Authentication:** JWT / OAuth 2.0 / cookie-parser / Resetting Password One time Use URL
+- **Validation:** Zod (to verifiy comming data `req.body`)
 
 ---
 
@@ -105,7 +105,7 @@ YOUR_ACCESS_KEY=AKIAY89SZ7RCYROGBOAV
 YOUR_SECRET_KEY=aZSRYz+hb+e+PRNIFVXw6UOAFO5+t1Moprk2DnIN
 YOUR_REGION=ap-south-1
 
-#Reset_PassWord_forget_pass
+#Reset_PassWord_Token_Timing
 TTL_Time_Token=1800
 ```
 ### Installation

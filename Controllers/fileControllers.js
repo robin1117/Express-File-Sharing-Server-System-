@@ -5,7 +5,11 @@ import usrModel from "../models/userModel.js";
 import fleModel from "../models/fileModel.js";
 import directoryModel from "../models/directoryModel.js";
 import { renameSchema } from "../validators/nameValidator.js";
-import { DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {
+  AbortMultipartUploadCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
 import s3Client from "../config/s3Config.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -52,15 +56,20 @@ export const deletingFileName = async (req, res, next) => {
         .status(404)
         .json({ message: "You are trying to access someone`s other file😏" });
     }
-
-    let fullName = `${fileId}${fileData.extension}`;
-
-    const deleteCommand = new DeleteObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: fileData._id.toString(),
-    });
-
-    await s3Client.send(deleteCommand);
+    if (fileData.uploadStatus !== "completed") {
+      const abortingIncompleteFile = new AbortMultipartUploadCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileData._id.toString(),
+        UploadId: fileData.uploadId,
+      });
+      let o1 = await s3Client.send(abortingIncompleteFile);
+    } else {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: fileData._id.toString(),
+      });
+      let o = await s3Client.send(deleteCommand);
+    }
     await fleModel.deleteOne({ _id: new ObjectId(fileId) });
 
     res.status(200).json({ message: "File deleted successfully" });

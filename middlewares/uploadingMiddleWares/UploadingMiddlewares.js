@@ -130,7 +130,7 @@ export const chunkBasedUploading = async (req, res, next) => {
       PartNumber: calculatedPartNumber,
       ETag: s3Response.ETag,
     });
-    console.log(uploadParts.get(file_id));
+    // console.log(uploadParts.get(file_id));
     uploadParts.set(file_id, parts);
     uploadOffsets.set(file_id, uploadOffset + currentChunkSize);
 

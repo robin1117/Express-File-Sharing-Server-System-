@@ -1,0 +1,47 @@
+================================================================================
+AWS CLI COMMANDS & TROUBLESHOOTING GUIDE (S3 & MULTIPART UPLOADS)
+================================================================================
+
+1. LIST INCOMPLETE MULTIPART UPLOADS
+--------------------------------------------------------------------------------
+Command to list all incomplete multipart uploads in your bucket:
+
+  aws s3api list-multipart-uploads --bucket loaderbucket-686831565893-ap-south-1-an
+
+
+2. ABORT A SINGLE MULTIPART UPLOAD
+--------------------------------------------------------------------------------
+Command to abort a specific multipart upload using Key and UploadID:
+
+  aws s3api abort-multipart-upload \
+    --bucket loaderbucket-686831565893-ap-south-1-an \
+    --key "YOUR_FILE_KEY" \
+    --upload-id "YOUR_UPLOAD_ID"
+
+
+3. DELETE ALL INCOMPLETE MULTIPART UPLOADS AT ONCE (BASH SCRIPT FOR CLOUDSHELL)
+--------------------------------------------------------------------------------
+Copy and run this single-line loop in AWS CloudShell to delete all incomplete 
+multipart uploads automatically:
+
+  aws s3api list-multipart-uploads --bucket loaderbucket-686831565893-ap-south-1-an --query 'Uploads[].[Key, UploadId]' --output text | while read -r key upload_id; do aws s3api abort-multipart-upload --bucket loaderbucket-686831565893-ap-south-1-an --key "$key" --upload-id "$upload_id"; done
+
+
+4. CHECK REAL-TIME BUCKET SIZE & OBJECT COUNT
+--------------------------------------------------------------------------------
+Metrics in AWS Console update only once per day. To get real-time bucket size 
+and file count immediately, run:
+
+  aws s3 ls --summarize --human-readable --recursive s3://loaderbucket-686831565893-ap-south-1-an
+
+
+5. AUTOMATIC FUTURE CLEANUP (RECOMMENDED)
+--------------------------------------------------------------------------------
+To prevent incomplete uploads from accumulating space in the future:
+  1. Go to AWS S3 Console -> Select your bucket.
+  2. Click on the "Management" tab.
+  3. Click "Create lifecycle rule".
+  4. Select "Delete incomplete multipart uploads".
+  5. Set the number of days (e.g., 7 days or 1 day) and Save.
+
+================================================================================

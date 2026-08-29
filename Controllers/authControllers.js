@@ -1,6 +1,5 @@
 import { startSession, Types } from "mongoose";
 import OTP from "../models/otpModel.js";
-import Session from "../models/sessionModel.js";
 import usrModel from "../models/userModel.js";
 import {
   getGitInfo,
@@ -9,9 +8,14 @@ import {
 import { sendOtp } from "../util/sendOtp.js";
 import directoryModel from "../models/directoryModel.js";
 import { generateSession } from "../util/LoginSessionHandler.js";
-import { emailSchema, otpSchema } from "../validators/authValidators.js";
+import {
+  emailSchema,
+  otpSchema,
+  resetPasswordSchema,
+} from "../validators/authValidators.js";
 import z4 from "zod/v4";
 import { sendPasswordUrl } from "../util/sendPasswordResetUrl.js";
+import pasResetToken from "../models/passwordResetTokenModel.js";
 
 export const sendOtpforEmailVerifiy = async (req, res, next) => {
   let { success, data, error } = emailSchema.safeParse(req.body);
@@ -183,32 +187,64 @@ export const loginWithAuthCode = async (req, res, next) => {
   }
 };
 
-export const generatingTokenForRessetingPass = async (req, res) => async (req, res) => {
-    let { success, data, error } = emailSchema.safeParse(req.body);
-    if (!success) {
-      return res.status(401).json(z4.treeifyError(error).properties);
-    }
-    let { email } = data;
-    let usr = await usrModel.findOne({ email });
-    if (!usr) {
+export const generatingTokenForRessetingPass = async (req, res) => {
+  let { success, data, error } = emailSchema.safeParse(req.body);
+  if (!success) {
+    return res.status(401).json(z4.treeifyError(error).properties);
+  }
+  let { email } = data;
+  let usr = await usrModel.findOne({ email });
+  if (!usr) {
+    return res
+      .status(200)
+      .json({ msg: "If you are registered you got Email from us" });
+  }
+  try {
+    let token = crypto.randomBytes(64).toString("base64url");
+    let newToken = await pasResetToken.insertOne({ userId: usr.id, token });
+    await sendPasswordUrl(email, newToken);
+    return res
+      .status(200)
+      .json({ msg: "If you are registered you got Email from us" });
+  } catch (error) {
+    if (error.code == 11000) {
+      let previousToken = await pasResetToken.findOne({ userId: usr.id });
+      await sendPasswordUrl(email, previousToken);
       return res
         .status(200)
         .json({ msg: "If you are registered you got Email from us" });
     }
-    try {
-      let token = crypto.randomBytes(64).toString("base64url");
-      let newToken = await pasResetToken.insertOne({ userId: usr.id, token });
-      await sendPasswordUrl(email, newToken);
-      return res
-        .status(200)
-        .json({ msg: "If you are registered you got Email from us" });
-    } catch (error) {
-      if (error.code == 11000) {
-        let previousToken = await pasResetToken.findOne({ userId: usr.id });
-        await sendPasswordUrl(email, previousToken);
-        return res
-          .status(200)
-          .json({ msg: "If you are registered you got Email from us" });
-      }
+  }
+};
+
+export const passwordResettingUsingToken = async (req, res, next) => {
+  let { success, data, error } = resetPasswordSchema.safeParse(req.body);
+  if (!success) {
+    return res.status(401).json(z4.treeifyError(error).properties);
+  }
+  let { token, password } = data;
+  try {
+    let generatedToken = Buffer.from(token, "base64url").toString("utf-8");
+    let tokenObject = JSON.parse(generatedToken);
+    let isTokenInDbExist = await pasResetToken.findById(tokenObject._id);
+
+    if (!isTokenInDbExist) {
+      return res.status(401).json({ msg: "Link is not valid anymore" });
     }
-  };
+
+    let user = await usrModel.findById(isTokenInDbExist.userId);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    user.password = password; //resetting Pass
+
+    await user.save();
+
+    await pasResetToken.findByIdAndDelete(isTokenInDbExist._id);
+
+    return res.status(200).json({ msg: "Password reset successful!" });
+  } catch (error) {
+    return res.status(500).json({ msg: "Internal server error" });
+  }
+};
