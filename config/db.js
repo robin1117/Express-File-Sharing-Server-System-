@@ -1,23 +1,25 @@
 import mongoose from "mongoose";
+import dns from "dns";
 
-// export const client = new MongoClient("mongodb://127.0.0.1:27017/storageApp")
-// export const client = new MongoClient("mongodb://dbAdminUser:user1@localhost:27017/storageApp") //accessing a aunthicated DB
+// Force Node.js to use IPv4 DNS resolution first (Fixes ENOTFOUND)
+dns.setDefaultResultOrder("ipv4first");
 
 export async function connectDB(params) {
   try {
-    await mongoose.connect(process.env.MONGO_DB_URL); //shifting to Mongoose
+    // Added a timeout option so your app doesn't hang indefinitely if DNS fails
+    await mongoose.connect(process.env.MONGO_DB_URL, {
+      serverSelectionTimeoutMS: 5000,
+    });
+
     console.log("MongoDb_Client Connected");
   } catch (error) {
-    console.log(error.message);
+    console.error("Database connection failed:", error);
     process.exit(1);
   }
-  //     await client.connect()
-  //     let db = client.db() //todoApp
-  //     return db
 }
 
 process.on("SIGINT", async () => {
   await mongoose.disconnect();
   console.log("Server is Disconnected");
-  process.exit();
+  process.exit(0);
 });

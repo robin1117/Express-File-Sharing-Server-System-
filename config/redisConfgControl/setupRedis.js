@@ -1,6 +1,14 @@
 import { createClient, SCHEMA_FIELD_TYPE } from "redis";
 
-let redisClient = createClient();
+// let redisClient = createClient();
+const redisClient = createClient({
+  username: "default",
+  password: process.env.REDIS_PASS,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: 14612,
+  },
+});
 
 async function creatingIndexForSesssion() {
   await redisClient.connect();

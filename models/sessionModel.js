@@ -1,23 +1,21 @@
-import mongoose, { Schema, model, Types } from "mongoose"
+import mongoose, { Schema, model, Types } from "mongoose";
 
-let sessionModel = new Schema({
+let sessionModel = new Schema(
+  {
     userId: {
-        type: Types.ObjectId,
-        default: null
+      type: Types.ObjectId,
+      default: null,
     },
 
     createdAt: {
-        type: Date,
-        default: Date.now,
-        expires: 3600
+      type: Date,
+      default: Date.now,
+      expires: 3600,
     },
-
-}, {
-
-});
+  },
+  {},
+);
 
 let Session = model("sessionDB", sessionModel, "sessionDB");
 
-
-
-export default Session
+export default Session;
