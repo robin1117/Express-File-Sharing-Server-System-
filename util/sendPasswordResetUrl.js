@@ -26,7 +26,7 @@ export async function sendPasswordUrl(email, token) {
           <!-- Header / Brand -->
           <tr>
             <td style="padding-bottom: 24px; border-bottom: 1px solid #eef2f5;">
-              <h1 style="margin: 0; font-size: 20px; color: #1a1f36; font-weight: 700;">Free Storage Hub</h1>
+              <h1 style="margin: 0; font-size: 20px; color: #1a1f36; font-weight: 700;">Loader Storage Hub</h1>
             </td>
           </tr>
           
@@ -63,9 +63,8 @@ export async function sendPasswordUrl(email, token) {
 </body>
 </html>
 `;
-
     await resend.emails.send({
-      from: "Loader Storage App<system@chayaindustries.in>",
+      from: "Loader Storage App<ResetPass@chayaindustries.in>",
       to: email,
       subject: "Storage App OTP",
       html,

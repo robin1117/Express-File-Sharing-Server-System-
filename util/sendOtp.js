@@ -40,7 +40,7 @@ export async function sendOtp(email) {
   `;
 
     let result = await resend.emails.send({
-      from: "Free Storage Hub<otp@chayaindustries.in>",
+      from: "Loader Storage App<otp@chayaindustries.in>",
       to: email,
       subject: "Storage App OTP",
       html,
