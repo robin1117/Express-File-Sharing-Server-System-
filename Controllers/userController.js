@@ -175,19 +175,22 @@ export const deleteUser = async (req, res) => {
     let fileArray = await fleModel
       .find({ userId })
       .select({ _id: 1, extension: 1 });
-
-    fileArray.forEach(async ({ _id, extension }) => {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME,
-        Key: _id.toString(),
+    if (fileArray.length != 0) {
+      fileArray.forEach(async ({ _id }) => {
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: _id.toString(),
+        });
+        await s3Client.send(deleteCommand);
       });
-      await s3Client.send(deleteCommand);
-    });
+    }
 
     let result = await redisClient.ft.search("session", `@userId:{${userId}}`);
 
     const sessionIds = result.documents.map((doc) => doc.id);
-    await redisClient.del(sessionIds);
+    if (sessionIds != 0) {
+      await redisClient.del(sessionIds);
+    }
 
     // await Session.deleteMany({ userId });
     await usrModel.findOneAndDelete({ _id: userId });

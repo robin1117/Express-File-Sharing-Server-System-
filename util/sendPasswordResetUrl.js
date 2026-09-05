@@ -65,7 +65,7 @@ export async function sendPasswordUrl(email, token) {
 `;
 
     await resend.emails.send({
-      from: "Free Storage Hub<system@chayaindustries.in>",
+      from: "Loader Storage App<system@chayaindustries.in>",
       to: email,
       subject: "Storage App OTP",
       html,

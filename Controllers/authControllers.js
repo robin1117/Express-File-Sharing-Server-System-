@@ -16,6 +16,7 @@ import {
 import z4 from "zod/v4";
 import { sendPasswordUrl } from "../util/sendPasswordResetUrl.js";
 import pasResetToken from "../models/passwordResetTokenModel.js";
+import crypto from "node:crypto";
 
 export const sendOtpforEmailVerifiy = async (req, res, next) => {
   let { success, data, error } = emailSchema.safeParse(req.body);
@@ -187,19 +188,19 @@ export const loginWithAuthCode = async (req, res, next) => {
   }
 };
 
-export const generatingTokenForRessetingPass = async (req, res) => {
+export const generatingTokenForRessetingPass = async (req, res, next) => {
   let { success, data, error } = emailSchema.safeParse(req.body);
   if (!success) {
     return res.status(401).json(z4.treeifyError(error).properties);
   }
   let { email } = data;
-  let usr = await usrModel.findOne({ email });
-  if (!usr) {
-    return res
-      .status(200)
-      .json({ msg: "If you are registered you got Email from us" });
-  }
   try {
+    let usr = await usrModel.findOne({ email });
+    if (!usr) {
+      return res
+        .status(200)
+        .json({ msg: "If you are registered you got Email from us" });
+    }
     let token = crypto.randomBytes(64).toString("base64url");
     let newToken = await pasResetToken.insertOne({ userId: usr.id, token });
     await sendPasswordUrl(email, newToken);
@@ -214,6 +215,7 @@ export const generatingTokenForRessetingPass = async (req, res) => {
         .status(200)
         .json({ msg: "If you are registered you got Email from us" });
     }
+    next(error);
   }
 };
 
